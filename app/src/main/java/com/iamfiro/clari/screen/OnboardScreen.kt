@@ -18,19 +18,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.iamfiro.clari.feature.User.Component.AppleLoginButton
-import com.iamfiro.clari.feature.User.Component.GoogleLoginButton
+import com.iamfiro.clari.feature.user.Component.AppleLoginButton
+import com.iamfiro.clari.feature.user.Component.GoogleLoginButton
 
 @Composable
 fun OnboardScreen() {
     Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxHeight()) {
-        Box(Modifier
-            .fillMaxWidth()
-            .weight(1f)
-            .background(Color(0xFFA6C9EB)))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(Color(0xFFA6C9EB))
+        )
         Column(
             verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(32.dp)
                 .weight(1f)
         ) {

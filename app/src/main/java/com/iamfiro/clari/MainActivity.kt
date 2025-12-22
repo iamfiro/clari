@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
+import com.iamfiro.clari.screen.HomeScreen
 import com.iamfiro.clari.screen.OnboardScreen
 import com.skills.app.core.ui.theme.ClariTheme
 
@@ -23,7 +24,7 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                 ) {
-                    OnboardScreen()
+                    HomeScreen()
                 }
             }
         }

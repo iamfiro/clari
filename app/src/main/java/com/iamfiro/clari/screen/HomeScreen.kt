@@ -1,0 +1,95 @@
+package com.iamfiro.clari.screen
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.iamfiro.clari.core.ui.component.Banner
+import com.iamfiro.clari.core.ui.component.Header
+import com.iamfiro.clari.core.ui.component.NavBar
+import com.iamfiro.clari.core.ui.component.Title
+import com.iamfiro.clari.core.ui.theme.Dimens
+import com.iamfiro.clari.feature.note.Component.NewRecordingFloating
+import com.iamfiro.clari.feature.note.Component.NoteCard
+import com.iamfiro.clari.feature.note.model.dummy_notes
+import com.iamfiro.clari.feature.wordPack.component.WordCard
+import com.iamfiro.clari.feature.wordPack.model.dummy_words
+import androidx.compose.foundation.lazy.items
+
+@Composable
+fun HomeScreen() {
+    Scaffold(
+        bottomBar = { NavBar() },
+        floatingActionButton = { NewRecordingFloating(onClick = {}) }
+    ) { innerPadding ->
+        Column(Modifier.padding(innerPadding)) {
+            Header()
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(28.dp),
+                modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = 8.dp)
+            ) {
+                item { Banner() }
+
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Title("최근 노트")
+
+                        dummy_notes.map { note ->
+                            NoteCard(note)
+                        }
+                    }
+                }
+
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Title("최근에 사용한 단어팩")
+
+                        dummy_notes.map { note ->
+                            NoteCard(note)
+                        }
+                    }
+                }
+
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Title("자주 등장하는 단어")
+
+                        dummy_words.chunked(2).forEach { row ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                WordCard(
+                                    word = row[0],
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                if (row.size == 2) {
+                                    WordCard(
+                                        word = row[1],
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                } else {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    Spacer(Modifier.height(50.dp))
+                }
+            }
+        }
+    }
+}

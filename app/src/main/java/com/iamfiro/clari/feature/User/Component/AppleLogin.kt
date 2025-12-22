@@ -1,4 +1,4 @@
-package com.iamfiro.clari.feature.user.Component
+package com.iamfiro.clari.feature.User.Component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,12 +18,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.R
 
 @Composable
-fun GoogleLoginButton() {
+fun AppleLoginButton() {
     Row(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
@@ -39,11 +38,11 @@ fun GoogleLoginButton() {
             .fillMaxWidth()
     ) {
         Image(
-            painter = painterResource(R.drawable.google_logo),
+            painter = painterResource(R.drawable.apple_logo),
             contentDescription = "Google logo",
             modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.width(8.dp))
-        Text("Google로 계속하기", style = MaterialTheme.typography.bodyLarge)
+        Text("Apple로 계속하기", style = MaterialTheme.typography.bodyLarge)
     }
 }

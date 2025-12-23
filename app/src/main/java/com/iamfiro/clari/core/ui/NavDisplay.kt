@@ -12,6 +12,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.iamfiro.clari.screen.HomeScreen
 import com.iamfiro.clari.screen.NoteListScreen
+import com.iamfiro.clari.screen.OnboardScreen
 import com.iamfiro.clari.screen.PackListScreen
 
 val LocalNavBackStack = staticCompositionLocalOf<NavBackStack<NavKey>> {
@@ -30,6 +31,10 @@ fun AppNav() {
         backStack,
         onBack = { backStack.removeLastOrNull() },
         entryProvider = entryProvider {
+            entry<Screen.Onboard> {
+                OnboardScreen()
+            }
+
             entry<Screen.Home> {
                 HomeScreen()
             }

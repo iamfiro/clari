@@ -61,4 +61,8 @@ dependencies {
     implementation("androidx.navigation3:navigation3-runtime:1.0.0")
     implementation("androidx.navigation3:navigation3-ui:1.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("com.google.gms:google-services:4.3.15")
+    implementation("com.google.firebase:firebase-auth:22.0.0")
+    implementation("com.google.firebase:firebase-bom:32.0.0")
+    implementation("com.google.android.gms:play-services-auth:20.5.0")
 }

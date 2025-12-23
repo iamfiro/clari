@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import com.iamfiro.clari.screen.HomeScreen
 import com.iamfiro.clari.screen.NoteListScreen
 import com.iamfiro.clari.screen.OnboardScreen
+import com.iamfiro.clari.screen.PackListScreen
 import com.skills.app.core.ui.theme.ClariTheme
 
 class MainActivity : ComponentActivity() {
@@ -25,7 +26,7 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                 ) {
-                    NoteListScreen()
+                    PackListScreen()
                 }
             }
         }

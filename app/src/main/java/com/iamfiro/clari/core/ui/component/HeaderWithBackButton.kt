@@ -1,0 +1,40 @@
+package com.iamfiro.clari.core.ui.component
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.iamfiro.clari.R
+import com.iamfiro.clari.core.ui.theme.Dimens
+
+@Composable
+fun HeaderWithBackButton(text: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
+        IconButton(
+            onClick = {},
+            modifier = Modifier.offset(x = (-14).dp),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.arrow_left),
+                contentDescription = "Back",
+            )
+        }
+        Text(
+            text,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}

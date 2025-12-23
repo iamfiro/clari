@@ -10,6 +10,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.iamfiro.clari.screen.BeforeRecordingScreen
 import com.iamfiro.clari.screen.HomeScreen
 import com.iamfiro.clari.screen.NoteListScreen
 import com.iamfiro.clari.screen.OnboardScreen
@@ -31,21 +32,14 @@ fun AppNav() {
         backStack,
         onBack = { backStack.removeLastOrNull() },
         entryProvider = entryProvider {
-            entry<Screen.Onboard> {
-                OnboardScreen()
-            }
+            entry<Screen.Onboard> { OnboardScreen() }
 
-            entry<Screen.Home> {
-                HomeScreen()
-            }
+            entry<Screen.Home> { HomeScreen() }
+            entry<Screen.Note> { NoteListScreen() }
+            entry<Screen.WordPack> { PackListScreen() }
 
-            entry<Screen.Note> {
-                NoteListScreen()
-            }
-
-            entry<Screen.WordPack> {
-                PackListScreen()
-            }
+            // Recording
+            entry<Screen.BeforeRecording> { BeforeRecordingScreen() }
         }
     )
 }

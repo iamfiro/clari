@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -23,7 +24,7 @@ import com.iamfiro.clari.R
 import com.iamfiro.clari.feature.wordPack.model.WordPack
 
 @Composable
-fun WordPackCard(wordPack: WordPack) {
+fun WordPackCard(wordPack: WordPack, frequentlyUsed: Boolean = false) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
@@ -34,6 +35,15 @@ fun WordPackCard(wordPack: WordPack) {
 
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if(frequentlyUsed) {
+                Text(
+                    "자주 사용!",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.Red
+                    ,
+                )
+            }
+
             Text(
                 wordPack.name,
                 style = MaterialTheme.typography.titleMedium,

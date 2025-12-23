@@ -16,4 +16,8 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object WordPack : Screen
+
+    // Recording
+    @Serializable
+    data object BeforeRecording : Screen
 }

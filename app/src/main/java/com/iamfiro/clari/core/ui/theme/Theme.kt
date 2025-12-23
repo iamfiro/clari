@@ -21,9 +21,9 @@ private val DarkColorScheme = darkColorScheme(
 
     secondary = Color(0xFF969696),
 
-    primary = Color(0xFF2289FF),
-    primaryContainer = Color(0x802289FF),
-    onPrimary = Color.White,
+    primary = Color(0xFFF8F8F8),
+    primaryContainer = Color(0x80B05959),
+    onPrimary = Color.Black,
 
     error = Color(0xFFFF5959),
     errorContainer = Color(0x80FF5959),

@@ -12,6 +12,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.iamfiro.clari.core.ui.LocalCurrentScreen
+import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.component.Banner
 import com.iamfiro.clari.core.ui.component.Header
 import com.iamfiro.clari.core.ui.component.NavBar
@@ -43,7 +45,7 @@ fun HomeScreen() {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SectionTitle("최근 노트")
 
-                        dummy_notes.map { note ->
+                        dummy_notes.take(3).map { note ->
                             NoteCard(note)
                         }
                     }

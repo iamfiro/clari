@@ -17,9 +17,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.component.Header
 import com.iamfiro.clari.core.ui.component.NavBar
-import com.iamfiro.clari.core.ui.component.SectionTitle
 import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.note.Component.NewRecordingFloating
 import com.iamfiro.clari.feature.note.Component.NoteCard

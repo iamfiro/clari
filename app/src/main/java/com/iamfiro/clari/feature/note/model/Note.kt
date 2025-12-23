@@ -1,4 +1,4 @@
-package com.iamfiro.clari.feature.note.model
+package com.iamfiro.clwari.feature.note.model
 
 data class Note (
     val name: String,

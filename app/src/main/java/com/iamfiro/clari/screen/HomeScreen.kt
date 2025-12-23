@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -20,10 +19,11 @@ import com.iamfiro.clari.core.ui.component.Title
 import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.note.Component.NewRecordingFloating
 import com.iamfiro.clari.feature.note.Component.NoteCard
-import com.iamfiro.clari.feature.note.model.dummy_notes
 import com.iamfiro.clari.feature.wordPack.component.WordCard
 import com.iamfiro.clari.feature.wordPack.model.dummy_words
-import androidx.compose.foundation.lazy.items
+import com.iamfiro.clari.feature.wordPack.component.WordPackCard
+import com.iamfiro.clari.feature.wordPack.model.dummyWordPacks
+import com.iamfiro.clwari.feature.note.model.dummy_notes
 
 @Composable
 fun HomeScreen() {
@@ -53,8 +53,8 @@ fun HomeScreen() {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Title("최근에 사용한 단어팩")
 
-                        dummy_notes.map { note ->
-                            NoteCard(note)
+                        dummyWordPacks.map { pack ->
+                            WordPackCard(pack)
                         }
                     }
                 }

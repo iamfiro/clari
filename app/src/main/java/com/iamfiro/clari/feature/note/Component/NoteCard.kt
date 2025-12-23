@@ -20,6 +20,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.R
+import com.iamfiro.clari.util.dateKoreanFormatter
 import com.iamfiro.clari.util.millisToMinutes
 import com.iamfiro.clari.util.unixTimeToKoreanDate
 import com.iamfiro.clwari.feature.note.model.Note
@@ -42,7 +43,7 @@ fun NoteCard(note: Note) {
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                unixTimeToKoreanDate(note.createdAt),
+                dateKoreanFormatter.format(note.createdAt),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.secondary
             )

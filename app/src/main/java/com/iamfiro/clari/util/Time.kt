@@ -1,6 +1,8 @@
 package com.iamfiro.clari.util
 
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -25,4 +27,23 @@ fun unixTimeToKoreanDate(
 
 fun millisToMinutes(millis: Long): Long {
     return millis / 1000 / 60
+}
+
+val dateKoreanFormatter = DateTimeFormatter.ofPattern(
+    "yyyy년 M월 d일(E) hh:mm",
+    Locale.KOREA
+)
+
+fun toRelativeDateLabel(dateTime: LocalDateTime, now: LocalDateTime): String {
+    val date = dateTime.toLocalDate()
+    val today = now.toLocalDate()
+
+    return when {
+        date == today -> "오늘"
+        date == today.minusDays(1) -> "어제"
+        date.year == today.year ->
+            date.format(DateTimeFormatter.ofPattern("M월 d일"))
+        else ->
+            date.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일"))
+    }
 }

@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.core.ui.component.Banner
 import com.iamfiro.clari.core.ui.component.Header
 import com.iamfiro.clari.core.ui.component.NavBar
-import com.iamfiro.clari.core.ui.component.Title
+import com.iamfiro.clari.core.ui.component.SectionTitle
 import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.note.Component.NewRecordingFloating
 import com.iamfiro.clari.feature.note.Component.NoteCard
@@ -41,7 +41,7 @@ fun HomeScreen() {
 
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Title("최근 노트")
+                        SectionTitle("최근 노트")
 
                         dummy_notes.map { note ->
                             NoteCard(note)
@@ -51,7 +51,7 @@ fun HomeScreen() {
 
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Title("최근에 사용한 단어팩")
+                        SectionTitle("최근에 사용한 단어팩")
 
                         dummyWordPacks.map { pack ->
                             WordPackCard(pack)
@@ -61,7 +61,7 @@ fun HomeScreen() {
 
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Title("자주 등장하는 단어")
+                        SectionTitle("자주 등장하는 단어")
 
                         dummy_words.chunked(2).forEach { row ->
                             Row(

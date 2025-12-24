@@ -47,3 +47,9 @@ fun toRelativeDateLabel(dateTime: LocalDateTime, now: LocalDateTime): String {
             date.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일"))
     }
 }
+
+fun formatMmSs(totalSec: Int): String {
+    val m = totalSec / 60
+    val s = totalSec % 60
+    return "%02d:%02d".format(m, s)
+}

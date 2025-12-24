@@ -21,7 +21,7 @@ import com.iamfiro.clari.core.ui.theme.Dimens
 
 @Composable
 fun HeaderWithBackButton(text: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
         IconButton(
             onClick = {},
             modifier = Modifier.offset(x = (-14).dp),

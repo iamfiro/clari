@@ -12,6 +12,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.iamfiro.clari.screen.BeforeRecordingScreen
 import com.iamfiro.clari.screen.HomeScreen
+import com.iamfiro.clari.screen.NoteDetailScreen
 import com.iamfiro.clari.screen.NoteListScreen
 import com.iamfiro.clari.screen.OnboardScreen
 import com.iamfiro.clari.screen.PackListScreen
@@ -36,7 +37,10 @@ fun AppNav() {
             entry<Screen.Onboard> { OnboardScreen() }
 
             entry<Screen.Home> { HomeScreen() }
+
             entry<Screen.Note> { NoteListScreen() }
+            entry<Screen.NoteDetail> { NoteDetailScreen() }
+
             entry<Screen.WordPack> { PackListScreen() }
 
             // Recording

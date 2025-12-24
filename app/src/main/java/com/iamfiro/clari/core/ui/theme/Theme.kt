@@ -22,11 +22,11 @@ private val DarkColorScheme = darkColorScheme(
     secondary = Color(0xFF969696),
 
     primary = Color(0xFFF8F8F8),
-    primaryContainer = Color(0x80B05959),
+    primaryContainer = Color(0xFF1C5180),
     onPrimary = Color.Black,
 
     error = Color(0xFFFF5959),
-    errorContainer = Color(0x80FF5959),
+    errorContainer = Color(0x2DFF5959),
 
     outline = Color(0xFF212121),
 )
@@ -46,9 +46,9 @@ private val LightColorScheme = lightColorScheme(
     secondary = Color(0xFF7E7E7E),
 
     error = Color(0xFFFF5959),
-    errorContainer = Color(0x80FF5959),
+    errorContainer = Color(0x1EFF5959),
 
-    outline = Color(0xFFE9E9E9),
+    outline = Color(0xFFE3E3E3),
 )
 
 @Composable

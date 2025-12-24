@@ -20,4 +20,7 @@ sealed interface Screen : NavKey {
     // Recording
     @Serializable
     data object BeforeRecording : Screen
+
+    @Serializable
+    data object Recording : Screen
 }

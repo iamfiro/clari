@@ -39,7 +39,7 @@ fun NoteListScreen() {
 
     Scaffold(
         bottomBar = { NavBar() },
-        floatingActionButton = { NewRecordingFloating(onClick = {}) }
+        floatingActionButton = { NewRecordingFloating() }
     ) { innerPadding ->
         Column(Modifier.padding(innerPadding)) {
             Header("노트")

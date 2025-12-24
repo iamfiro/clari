@@ -22,7 +22,7 @@ import com.iamfiro.clari.feature.wordPack.model.dummyWordPacks
 fun PackListScreen() {
     Scaffold(
         bottomBar = { NavBar() },
-        floatingActionButton = { NewRecordingFloating(onClick = {}) }
+        floatingActionButton = { NewRecordingFloating() }
     ) { innerPadding ->
         Column(Modifier.padding(innerPadding)) {
             Header("단어 팩")

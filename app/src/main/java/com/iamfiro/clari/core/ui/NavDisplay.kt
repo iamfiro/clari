@@ -15,6 +15,7 @@ import com.iamfiro.clari.screen.HomeScreen
 import com.iamfiro.clari.screen.NoteListScreen
 import com.iamfiro.clari.screen.OnboardScreen
 import com.iamfiro.clari.screen.PackListScreen
+import com.iamfiro.clari.screen.RecordingScreen
 
 val LocalNavBackStack = staticCompositionLocalOf<NavBackStack<NavKey>> {
     error("NavBackStack not provided")
@@ -40,6 +41,7 @@ fun AppNav() {
 
             // Recording
             entry<Screen.BeforeRecording> { BeforeRecordingScreen() }
+            entry<Screen.Recording> { RecordingScreen() }
         }
     )
 }

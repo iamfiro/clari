@@ -31,7 +31,7 @@ import com.iamfiro.clwari.feature.note.model.dummy_notes
 fun HomeScreen() {
     Scaffold(
         bottomBar = { NavBar() },
-        floatingActionButton = { NewRecordingFloating(onClick = {}) }
+        floatingActionButton = { NewRecordingFloating() }
     ) { innerPadding ->
         Column(Modifier.padding(innerPadding)) {
             Header()
@@ -55,7 +55,7 @@ fun HomeScreen() {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SectionTitle("최근에 사용한 단어팩")
 
-                        dummyWordPacks.map { pack ->
+                        dummyWordPacks.take(2).map { pack ->
                             WordPackCard(pack)
                         }
                     }

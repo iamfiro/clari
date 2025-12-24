@@ -29,12 +29,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.iamfiro.clari.core.ui.LocalNavBackStack
+import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.wordPack.component.WordPackCard
 import com.iamfiro.clari.feature.wordPack.model.dummyWordPacks
 
 @Composable
 fun BeforeRecordingScreen() {
+    val backStack = LocalNavBackStack.current;
     var query by remember { mutableStateOf("") }
 
     Scaffold(Modifier.fillMaxSize()) { innerPadding ->
@@ -85,12 +88,14 @@ fun BeforeRecordingScreen() {
 
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {
+                        backStack.add(Screen.Recording)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(60.dp)
                 ) {
-                    Text("눌러서 시작하기", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text("눌러서 시작하기", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                 }
             }
         }

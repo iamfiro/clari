@@ -11,15 +11,18 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.R
+import com.iamfiro.clari.core.ui.LocalNavBackStack
+import com.iamfiro.clari.core.ui.Screen
 
 @Composable
 fun NewRecordingFloating(
-    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val backStack = LocalNavBackStack.current;
+
     ExtendedFloatingActionButton(
         modifier = modifier,
-        onClick = onClick,
+        onClick = { backStack.add(Screen.BeforeRecording) },
         icon = {
             Icon(
                 painter = painterResource(R.drawable.mic),

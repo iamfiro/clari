@@ -1,4 +1,4 @@
-package com.iamfiro.clari.screen
+package com.iamfiro.clari.screen.recording
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -32,8 +31,8 @@ import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.theme.Dimens
-import com.iamfiro.clari.feature.wordPack.component.WordPackCard
-import com.iamfiro.clari.feature.wordPack.model.dummyWordPacks
+import com.iamfiro.clari.feature.project.component.ProjectCard
+import com.iamfiro.clari.feature.project.model.dummy_project
 
 @Composable
 fun BeforeRecordingScreen() {
@@ -59,12 +58,12 @@ fun BeforeRecordingScreen() {
                     ) {
                         SearchBar(query, { query = it })
 
-                        WordPackCard(
-                            dummyWordPacks[0],
+                        ProjectCard(
+                            dummy_project[0],
                             true
                         )
-                        dummyWordPacks.map { pack ->
-                            WordPackCard(pack)
+                        dummy_project.map { pack ->
+                            ProjectCard(pack)
                         }
                     }
                 }

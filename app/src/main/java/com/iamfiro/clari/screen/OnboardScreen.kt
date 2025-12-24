@@ -18,8 +18,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.iamfiro.clari.feature.user.Component.AppleLoginButton
-import com.iamfiro.clari.feature.user.Component.GoogleLoginButton
+import com.iamfiro.clari.feature.user.component.AppleLoginButton
+import com.iamfiro.clari.feature.user.component.GoogleLoginButton
 
 @Composable
 fun OnboardScreen() {

@@ -12,19 +12,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.iamfiro.clari.core.ui.LocalCurrentScreen
-import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.component.Banner
 import com.iamfiro.clari.core.ui.component.Header
 import com.iamfiro.clari.core.ui.component.NavBar
 import com.iamfiro.clari.core.ui.component.SectionTitle
 import com.iamfiro.clari.core.ui.theme.Dimens
-import com.iamfiro.clari.feature.note.Component.NewRecordingFloating
-import com.iamfiro.clari.feature.note.Component.NoteCard
-import com.iamfiro.clari.feature.wordPack.component.WordCard
-import com.iamfiro.clari.feature.wordPack.model.dummy_words
-import com.iamfiro.clari.feature.wordPack.component.WordPackCard
-import com.iamfiro.clari.feature.wordPack.model.dummyWordPacks
+import com.iamfiro.clari.feature.note.component.NewRecordingFloating
+import com.iamfiro.clari.feature.note.component.NoteCard
+import com.iamfiro.clari.feature.project.component.WordCard
+import com.iamfiro.clari.feature.project.model.dummy_words
+import com.iamfiro.clari.feature.project.component.ProjectCard
+import com.iamfiro.clari.feature.project.model.dummy_project
 import com.iamfiro.clwari.feature.note.model.dummy_notes
 
 @Composable
@@ -53,10 +51,10 @@ fun HomeScreen() {
 
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SectionTitle("최근에 사용한 단어팩")
+                        SectionTitle("최근에 사용한 프로젝트")
 
-                        dummyWordPacks.take(2).map { pack ->
-                            WordPackCard(pack)
+                        dummy_project.take(2).map { pack ->
+                            ProjectCard(pack)
                         }
                     }
                 }

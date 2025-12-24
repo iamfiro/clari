@@ -1,11 +1,6 @@
-package com.iamfiro.clari.feature.wordPack.model
+package com.iamfiro.clari.feature.project.model
 
-data class Word(
-    val name: String,
-    val meaning: String,
-)
-
-data class WordPack(
+data class Project(
     val name: String,
     val description: String,
 
@@ -22,14 +17,8 @@ data class WordPack(
     val downloadCount: Int,
 )
 
-val dummy_words = listOf<Word>(
-    Word("손도현", "김도현은 손을 좋아한다"),
-    Word("클라이언트", "컴퓨터 네트워크나 웹 서비스에서 정보나 서비스를 요청하고 제공받는 주체"),
-    Word("안니", "컴퓨터 웹 서비스에서 정보나 서비스를 요청하고 제공받는 주체"),
-)
-
-val dummyWordPacks = listOf(
-    WordPack(
+val dummy_project = listOf(
+    Project(
         name = "AWS · 클라우드 기초",
         description = "클라우드 입문자를 위한 AWS 핵심 용어 모음",
         publisherId = "official",
@@ -45,7 +34,7 @@ val dummyWordPacks = listOf(
         downloadCount = 12432
     ),
 
-    WordPack(
+    Project(
         name = "프론트엔드 개발 용어",
         description = "React, 웹 개발 회의에서 자주 나오는 용어 정리",
         publisherId = "community.frontend",
@@ -61,7 +50,7 @@ val dummyWordPacks = listOf(
         downloadCount = 5821
     ),
 
-    WordPack(
+    Project(
         name = "AI · 머신러닝 회의 용어",
         description = "AI 프로젝트 회의 중 등장하는 필수 개념",
         publisherId = "official.ai",
@@ -77,7 +66,7 @@ val dummyWordPacks = listOf(
         downloadCount = 9034
     ),
 
-    WordPack(
+    Project(
         name = "백엔드 · 서버 아키텍처",
         description = "API 설계와 서버 구조 회의에서 자주 쓰이는 용어",
         publisherId = "community.backend",
@@ -93,7 +82,7 @@ val dummyWordPacks = listOf(
         downloadCount = 3472
     ),
 
-    WordPack(
+    Project(
         name = "Android · 모바일 개발",
         description = "안드로이드 앱 개발 회의 필수 용어",
         publisherId = "official.mobile",
@@ -109,7 +98,7 @@ val dummyWordPacks = listOf(
         downloadCount = 10291
     ),
 
-    WordPack(
+    Project(
         name = "디자인 · UX 회의 용어",
         description = "디자이너와 개발자 협업 시 자주 등장하는 개념",
         publisherId = "community.design",
@@ -125,7 +114,7 @@ val dummyWordPacks = listOf(
         downloadCount = 2210
     ),
 
-    WordPack(
+    Project(
         name = "스타트업 · 비즈니스 미팅",
         description = "기획·투자·전략 회의에서 나오는 비즈니스 용어",
         publisherId = "community.business",
@@ -141,7 +130,7 @@ val dummyWordPacks = listOf(
         downloadCount = 6789
     ),
 
-    WordPack(
+    Project(
         name = "보안 · 인프라 기본",
         description = "보안 점검 및 인프라 회의 핵심 용어",
         publisherId = "official.security",

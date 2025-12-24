@@ -1,4 +1,4 @@
-package com.iamfiro.clari.feature.wordPack.component
+package com.iamfiro.clari.feature.project.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +14,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.iamfiro.clari.feature.wordPack.model.Word
+import com.iamfiro.clari.feature.project.model.Word
 
 @Composable
 fun WordCard(word: Word, modifier: Modifier = Modifier) {
@@ -25,7 +25,6 @@ fun WordCard(word: Word, modifier: Modifier = Modifier) {
             .background(MaterialTheme.colorScheme.surface)
             .padding(10.dp)
             .height(65.dp)
-
     ) {
         Text(word.name, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
         Text(

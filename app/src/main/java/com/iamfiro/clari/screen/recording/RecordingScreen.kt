@@ -1,4 +1,4 @@
-package com.iamfiro.clari.screen
+package com.iamfiro.clari.screen.recording
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -29,34 +29,29 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.iamfiro.clari.core.service.ConnectionState
-import com.iamfiro.clari.feature.note.Component.RecordingControl
-import com.iamfiro.clari.feature.note.Component.RecordingHeader
-import com.iamfiro.clari.feature.note.Component.TranscribeContainer
+import com.iamfiro.clari.feature.note.component.RecordingControl
+import com.iamfiro.clari.feature.note.component.RecordingHeader
+import com.iamfiro.clari.feature.note.component.TranscribeContainer
 import kotlinx.coroutines.launch
 
 private const val TAG = "RecordingScreen"
 
 @Composable
 fun RecordingScreen() {
-    Log.d(TAG, "========== RecordingScreen 렌더링 ==========")
-    
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    
-    // ViewModel
+
     val viewModel: RecordingViewModel = viewModel(
         factory = RecordingViewModelFactory(context.applicationContext)
     )
-    
-    // 상태 수집
+
     val isRecording by viewModel.isRecording.collectAsState()
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
     val partialText by viewModel.partialText.collectAsState()
     val transcriptItems by viewModel.transcriptItems.collectAsState()
-    
-    // 권한 상태
+
     var hasPermission by remember {
         val granted = ContextCompat.checkSelfPermission(
             context,
@@ -65,8 +60,7 @@ fun RecordingScreen() {
         Log.d(TAG, "초기 권한 상태: $granted")
         mutableStateOf(granted)
     }
-    
-    // 권한 요청 런처
+
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -83,8 +77,7 @@ fun RecordingScreen() {
             }
         }
     }
-    
-    // 화면 진입 시 자동으로 권한 요청 및 녹음 시작
+
     LaunchedEffect(Unit) {
         Log.d(TAG, "========== 화면 진입 - 자동 시작 ==========")
         Log.d(TAG, "현재 권한 상태: $hasPermission")
@@ -97,8 +90,7 @@ fun RecordingScreen() {
             viewModel.startRecording()
         }
     }
-    
-    // 연결 상태 변화 감지
+
     LaunchedEffect(connectionState) {
         Log.d(TAG, "연결 상태 변경: $connectionState")
         when (connectionState) {
@@ -110,8 +102,7 @@ fun RecordingScreen() {
             else -> {}
         }
     }
-    
-    // 화면 종료 시 녹음 중지
+
     DisposableEffect(Unit) {
         onDispose {
             Log.d(TAG, "========== 화면 종료 ==========")

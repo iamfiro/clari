@@ -1,4 +1,4 @@
-package com.iamfiro.clari.feature.user.Component
+package com.iamfiro.clari.feature.user.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

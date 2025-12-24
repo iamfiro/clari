@@ -1,7 +1,6 @@
-package com.iamfiro.clari.feature.wordPack.component
+package com.iamfiro.clari.feature.project.component
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
@@ -17,10 +16,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 
 @Composable
-fun PackTabChips(
+fun ProjectTabChips(
     modifier: Modifier = Modifier
 ) {
     var selectedIndex by remember { mutableStateOf(0) }
@@ -30,7 +28,7 @@ fun PackTabChips(
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         PrimaryFillChip(
-            text = "단어 팩",
+            text = "프로젝트",
             selected = selectedIndex == 0,
             onClick = { selectedIndex = 0 },
         )
@@ -71,6 +69,5 @@ fun PrimaryFillChip(
             selectedContainerColor = bg
         ),
         modifier = modifier.height(38.dp)
-        // ✅ border 파라미터 자체를 안 넣음 (outline 없음)
     )
 }

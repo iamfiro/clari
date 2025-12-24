@@ -1,4 +1,4 @@
-package com.iamfiro.clari.feature.wordPack.component
+package com.iamfiro.clari.feature.project.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,10 +21,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.R
-import com.iamfiro.clari.feature.wordPack.model.WordPack
+import com.iamfiro.clari.feature.project.model.Project
 
 @Composable
-fun WordPackCard(wordPack: WordPack, frequentlyUsed: Boolean = false) {
+fun ProjectCard(project: Project, frequentlyUsed: Boolean = false) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
@@ -45,12 +45,12 @@ fun WordPackCard(wordPack: WordPack, frequentlyUsed: Boolean = false) {
             }
 
             Text(
-                wordPack.name,
+                project.name,
                 style = MaterialTheme.typography.titleMedium,
             )
 
             Text(
-                "단어 ${wordPack.wordCount}개",
+                "단어 ${project.wordCount}개",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.secondary,
             )
@@ -63,7 +63,7 @@ fun WordPackCard(wordPack: WordPack, frequentlyUsed: Boolean = false) {
                 )
 
                 Text(
-                    wordPack.publisherName,
+                    project.publisherName,
                     style = MaterialTheme.typography.labelLarge,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 2
@@ -72,7 +72,7 @@ fun WordPackCard(wordPack: WordPack, frequentlyUsed: Boolean = false) {
         }
         Image(
             painter = painterResource(R.drawable.sample_profile),
-            contentDescription = wordPack.name,
+            contentDescription = project.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .width(74.dp)

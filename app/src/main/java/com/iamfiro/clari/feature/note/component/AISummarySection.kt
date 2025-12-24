@@ -1,4 +1,4 @@
-package com.iamfiro.clari.feature.note.Component
+package com.iamfiro.clari.feature.note.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement

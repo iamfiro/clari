@@ -1,7 +1,6 @@
 package com.iamfiro.clari.screen
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,9 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.R
 import com.iamfiro.clari.core.ui.theme.Dimens
-import com.iamfiro.clari.feature.note.Component.AISummarySection
-import com.iamfiro.clari.feature.note.Component.NoteDetailControl
-import com.iamfiro.clari.feature.note.Component.TranscribeSection
+import com.iamfiro.clari.feature.note.component.AISummarySection
+import com.iamfiro.clari.feature.note.component.NoteDetailControl
+import com.iamfiro.clari.feature.note.component.TranscribeSection
 import com.iamfiro.clari.feature.note.model.dummy_note_detail
 
 @Composable

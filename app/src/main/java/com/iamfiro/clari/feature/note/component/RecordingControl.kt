@@ -1,4 +1,4 @@
-package com.iamfiro.clari.feature.note.Component
+package com.iamfiro.clari.feature.note.component
 
 import android.util.Log
 import androidx.compose.foundation.background

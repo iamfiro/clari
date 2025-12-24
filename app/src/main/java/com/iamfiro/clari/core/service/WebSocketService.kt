@@ -24,10 +24,6 @@ import okhttp3.WebSocketListener
 import okio.ByteString
 import java.util.concurrent.TimeUnit
 
-/**
- * WebSocket STT 서비스
- * 실시간 음성 인식을 위한 WebSocket 통신 관리
- */
 class WebSocketService {
     
     companion object {
@@ -38,37 +34,28 @@ class WebSocketService {
     private val json = Json { ignoreUnknownKeys = true }
     
     private val client = OkHttpClient.Builder()
-        .readTimeout(0, TimeUnit.MILLISECONDS)  // WebSocket은 타임아웃 없이
+        .readTimeout(0, TimeUnit.MILLISECONDS)
         .connectTimeout(10, TimeUnit.SECONDS)
-        .pingInterval(30, TimeUnit.SECONDS)     // Keep-alive ping
+        .pingInterval(30, TimeUnit.SECONDS)
         .build()
-    
-    // 연결 상태
+
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
-    
-    // STT 응답
+
     private val _sttResponses = MutableSharedFlow<SttResponse>(replay = 0)
     val sttResponses: SharedFlow<SttResponse> = _sttResponses.asSharedFlow()
-    
-    // Partial 응답 (실시간 업데이트용)
+
     private val _partialText = MutableStateFlow<SttResponse?>(null)
     val partialText: StateFlow<SttResponse?> = _partialText.asStateFlow()
-    
-    // Committed 응답 (확정된 텍스트)
+
     private val _committedTexts = MutableSharedFlow<SttResponse>(replay = 0)
     val committedTexts: SharedFlow<SttResponse> = _committedTexts.asSharedFlow()
-    
-    // Formatted 응답 (AI 교정된 텍스트)
+
     private val _formattedTexts = MutableSharedFlow<SttResponse>(replay = 0)
     val formattedTexts: SharedFlow<SttResponse> = _formattedTexts.asSharedFlow()
-    
-    // 전송 카운터 (디버깅용)
+
     private var sendCount = 0
-    
-    /**
-     * WebSocket 연결
-     */
+
     fun connect() {
         Log.d(TAG, "========== WebSocket 연결 시도 ==========")
         Log.d(TAG, "현재 상태: ${_connectionState.value}")
@@ -153,10 +140,7 @@ class WebSocketService {
         
         Log.d(TAG, "WebSocket 객체 생성 완료: $webSocket")
     }
-    
-    /**
-     * 메시지 처리
-     */
+
     private suspend fun handleMessage(text: String) {
         Log.d(TAG, "========== 메시지 파싱 시작 ==========")
         
@@ -192,11 +176,7 @@ class WebSocketService {
             Log.e(TAG, "Stack Trace:", e)
         }
     }
-    
-    /**
-     * 오디오 데이터 전송
-     * @param base64Audio Base64로 인코딩된 PCM 오디오 데이터
-     */
+
     fun sendAudio(base64Audio: String) {
         sendCount++
         
@@ -231,10 +211,7 @@ class WebSocketService {
             Log.e(TAG, "Stack Trace:", e)
         }
     }
-    
-    /**
-     * 연결 해제
-     */
+
     fun disconnect() {
         Log.d(TAG, "========== WebSocket 연결 해제 ==========")
         Log.d(TAG, "총 전송 횟수: $sendCount")
@@ -247,10 +224,7 @@ class WebSocketService {
         
         Log.d(TAG, "연결 해제 완료")
     }
-    
-    /**
-     * 리소스 해제
-     */
+
     fun release() {
         Log.d(TAG, "========== WebSocket 리소스 해제 ==========")
         disconnect()
@@ -259,9 +233,6 @@ class WebSocketService {
     }
 }
 
-/**
- * WebSocket 연결 상태
- */
 sealed class ConnectionState {
     data object Disconnected : ConnectionState()
     data object Connecting : ConnectionState()

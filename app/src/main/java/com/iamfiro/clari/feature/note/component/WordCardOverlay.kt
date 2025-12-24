@@ -1,7 +1,6 @@
-package com.iamfiro.clari.feature.note.Component
+package com.iamfiro.clari.feature.note.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -30,7 +28,7 @@ import androidx.compose.ui.unit.times
 import androidx.compose.ui.zIndex
 import com.iamfiro.clari.R
 import com.iamfiro.clari.core.ui.theme.Dimens
-import com.iamfiro.clari.feature.wordPack.model.Word
+import com.iamfiro.clari.feature.project.model.Word
 
 @Composable
 fun WordCardOverlay(

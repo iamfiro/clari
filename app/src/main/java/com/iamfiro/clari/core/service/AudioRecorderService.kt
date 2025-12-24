@@ -18,43 +18,29 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-/**
- * 마이크 녹음 서비스
- * PCM 16bit, 16kHz, Mono 형식으로 오디오 캡처
- * Base64로 인코딩하여 전송
- */
 class AudioRecorderService(private val context: Context) {
-    
     companion object {
         private const val TAG = "AudioRecorderService"
-        
-        // 오디오 설정 (가이드 문서에 따름)
-        private const val SAMPLE_RATE = 16000           // 16kHz
+
+        private const val SAMPLE_RATE = 16000
         private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-        
-        // 버퍼 크기 (약 100ms 분량)
+
         private const val BUFFER_SIZE_FACTOR = 2
     }
     
     private var audioRecord: AudioRecord? = null
     private var recordingJob: Job? = null
     private var isRecording = false
-    
-    // 디버깅용 카운터
+
     private var chunkCount = 0
-    
-    // Base64로 인코딩된 오디오 청크를 방출
+
     private val _audioChunks = MutableSharedFlow<String>(replay = 0)
     val audioChunks: SharedFlow<String> = _audioChunks.asSharedFlow()
-    
-    // 녹음 상태
+
     private val _recordingState = MutableSharedFlow<RecordingState>(replay = 1)
     val recordingState: SharedFlow<RecordingState> = _recordingState.asSharedFlow()
-    
-    /**
-     * 마이크 권한 확인
-     */
+
     fun hasRecordPermission(): Boolean {
         val hasPermission = ContextCompat.checkSelfPermission(
             context,
@@ -64,10 +50,7 @@ class AudioRecorderService(private val context: Context) {
         Log.d(TAG, "마이크 권한 확인: $hasPermission")
         return hasPermission
     }
-    
-    /**
-     * 최소 버퍼 크기 계산
-     */
+
     private fun getMinBufferSize(): Int {
         val minSize = AudioRecord.getMinBufferSize(
             SAMPLE_RATE,
@@ -79,10 +62,7 @@ class AudioRecorderService(private val context: Context) {
         Log.d(TAG, "최소 버퍼 크기: $minSize, 사용할 버퍼 크기: $bufferSize")
         return bufferSize
     }
-    
-    /**
-     * 녹음 시작
-     */
+
     fun startRecording() {
         Log.d(TAG, "========== 녹음 시작 요청 ==========")
         
@@ -188,10 +168,7 @@ class AudioRecorderService(private val context: Context) {
             }
         }
     }
-    
-    /**
-     * 녹음 중지
-     */
+
     fun stopRecording() {
         Log.d(TAG, "========== 녹음 중지 ==========")
         Log.d(TAG, "총 청크 수: $chunkCount")
@@ -216,19 +193,13 @@ class AudioRecorderService(private val context: Context) {
         
         Log.d(TAG, "녹음 중지 완료")
     }
-    
-    /**
-     * 리소스 해제
-     */
+
     fun release() {
         Log.d(TAG, "========== 리소스 해제 ==========")
         stopRecording()
     }
 }
 
-/**
- * 녹음 상태
- */
 sealed class RecordingState {
     data object Idle : RecordingState()
     data object Recording : RecordingState()

@@ -1,4 +1,4 @@
-package com.iamfiro.clari.feature.note.Component
+package com.iamfiro.clari.feature.note.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.R
 import com.iamfiro.clari.util.dateKoreanFormatter
 import com.iamfiro.clari.util.millisToMinutes
-import com.iamfiro.clari.util.unixTimeToKoreanDate
 import com.iamfiro.clwari.feature.note.model.Note
 
 @Composable

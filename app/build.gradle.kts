@@ -65,4 +65,9 @@ dependencies {
     implementation("com.google.firebase:firebase-auth:22.0.0")
     implementation("com.google.firebase:firebase-bom:32.0.0")
     implementation("com.google.android.gms:play-services-auth:20.5.0")
+    
+    // WebSocket (OkHttp)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
 }

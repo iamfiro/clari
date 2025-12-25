@@ -43,7 +43,7 @@ fun AppNav() {
 
             // Recording
             entry<Screen.BeforeRecording> { BeforeRecordingScreen() }
-            entry<Screen.Recording> { RecordingScreen() }
+            entry<Screen.Recording> { screen -> RecordingScreen(screen.projectId) }
         }
     )
 }

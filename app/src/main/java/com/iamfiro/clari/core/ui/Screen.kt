@@ -28,5 +28,5 @@ sealed interface Screen : NavKey {
     data object BeforeRecording : Screen
 
     @Serializable
-    data object Recording : Screen
+    data class Recording(val projectId: String) : Screen
 }

@@ -8,6 +8,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,22 +33,48 @@ import com.iamfiro.clari.R
 import com.iamfiro.clari.feature.project.model.Project
 
 @Composable
-fun ProjectCard(project: Project?, frequentlyUsed: Boolean = false) {
+fun ProjectCard(
+    project: Project?,
+    frequentlyUsed: Boolean = false,
+    isSelected: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
     if (project == null) {
-        ProjectCardSkeleton()
+        ProjectCardSkeleton(modifier)
     } else {
-        ProjectCardContent(project, frequentlyUsed)
+        ProjectCardContent(project, frequentlyUsed, isSelected, onClick, modifier)
     }
 }
 
 @Composable
-private fun ProjectCardContent(project: Project, frequentlyUsed: Boolean = false) {
+private fun ProjectCardContent(
+    project: Project,
+    frequentlyUsed: Boolean = false,
+    isSelected: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .fillMaxWidth()
+            .then(
+                if (isSelected) {
+                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
+                } else {
+                    Modifier
+                }
+            )
             .background(MaterialTheme.colorScheme.surface)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable { onClick() }
+                } else {
+                    Modifier
+                }
+            )
             .padding(14.dp)
 
     ) {
@@ -99,7 +127,7 @@ private fun ProjectCardContent(project: Project, frequentlyUsed: Boolean = false
 }
 
 @Composable
-private fun ProjectCardSkeleton() {
+private fun ProjectCardSkeleton(modifier: Modifier = Modifier) {
     val infiniteTransition = rememberInfiniteTransition(label = "skeleton_animation")
     val alpha by infiniteTransition.animateFloat(
         initialValue = 0.05f,
@@ -113,7 +141,7 @@ private fun ProjectCardSkeleton() {
 
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .fillMaxWidth()
             .height(102.dp)

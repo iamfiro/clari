@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 private const val TAG = "RecordingScreen"
 
 @Composable
-fun RecordingScreen() {
+fun RecordingScreen(projectId: String) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }

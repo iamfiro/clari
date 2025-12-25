@@ -5,20 +5,28 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.iamfiro.clari.core.Repository.NoteRepository
 import com.iamfiro.clari.core.service.AudioRecorderService
 import com.iamfiro.clari.core.service.ConnectionState
 import com.iamfiro.clari.core.service.RecordingState
 import com.iamfiro.clari.core.service.WebSocketService
 import com.iamfiro.clari.core.service.model.SttResponse
 import com.iamfiro.clari.core.service.model.TranscriptItem
+import com.iamfiro.clari.feature.note.model.Note
+import com.iamfiro.clari.feature.note.model.NoteType
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
-class RecordingViewModel(context: Context) : ViewModel() {
+class RecordingViewModel(
+    context: Context,
+    private val noteRepository: NoteRepository
+) : ViewModel() {
     
     companion object {
         private const val TAG = "RecordingViewModel"
@@ -171,6 +179,29 @@ class RecordingViewModel(context: Context) : ViewModel() {
         stopTimer()
     }
 
+    suspend fun saveNote(projectId: String): Note? {
+        if (_elapsedSeconds.value == 0L) {
+            Log.d(TAG, "녹음 시간이 0초이므로 저장하지 않음")
+            return null
+        }
+
+        val note = Note(
+            type = NoteType.NOT_READY,
+            name = "녹음 ${LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("MM월 dd일 HH:mm"))}",
+            duration = _elapsedSeconds.value * 1000,
+            createdAt = LocalDateTime.now()
+        )
+
+        return try {
+            val savedNote = noteRepository.createNote(note)
+            Log.d(TAG, "노트 저장 완료: ${savedNote.id}")
+            savedNote
+        } catch (e: Exception) {
+            Log.e(TAG, "노트 저장 실패", e)
+            null
+        }
+    }
+
     fun toggleRecording() {
         Log.d(TAG, "녹음 토글 - 현재 상태: ${_isRecording.value}")
         if (_isRecording.value) {
@@ -210,11 +241,14 @@ class RecordingViewModel(context: Context) : ViewModel() {
     }
 }
 
-class RecordingViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
+class RecordingViewModelFactory(
+    private val context: Context,
+    private val noteRepository: NoteRepository
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(RecordingViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return RecordingViewModel(context) as T
+            return RecordingViewModel(context, noteRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

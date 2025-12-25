@@ -3,6 +3,7 @@ package com.iamfiro.clari.screen.recording
 import android.Manifest
 import android.content.pm.PackageManager
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -11,10 +12,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -28,7 +33,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.iamfiro.clari.core.Repository.NoteRepository
 import com.iamfiro.clari.core.service.ConnectionState
+import com.iamfiro.clari.core.ui.LocalNavBackStack
+import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.feature.note.component.RecordingControl
 import com.iamfiro.clari.feature.note.component.RecordingHeader
 import com.iamfiro.clari.feature.note.component.TranscribeContainer
@@ -41,9 +49,11 @@ fun RecordingScreen(projectId: String) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val backStack = LocalNavBackStack.current
+    val noteRepository = remember { NoteRepository() }
 
     val viewModel: RecordingViewModel = viewModel(
-        factory = RecordingViewModelFactory(context.applicationContext)
+        factory = RecordingViewModelFactory(context.applicationContext, noteRepository)
     )
 
     val isRecording by viewModel.isRecording.collectAsState()
@@ -51,6 +61,8 @@ fun RecordingScreen(projectId: String) {
     val connectionState by viewModel.connectionState.collectAsState()
     val partialText by viewModel.partialText.collectAsState()
     val transcriptItems by viewModel.transcriptItems.collectAsState()
+
+    var showExitDialog by remember { mutableStateOf(false) }
 
     var hasPermission by remember {
         val granted = ContextCompat.checkSelfPermission(
@@ -112,6 +124,46 @@ fun RecordingScreen(projectId: String) {
             }
         }
     }
+
+    BackHandler(enabled = true) {
+        showExitDialog = true
+    }
+
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = {
+                Text("녹음 종료")
+            },
+            text = {
+                Text("정말 끝내시겠습니까?")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            if (isRecording) {
+                                viewModel.stopRecording()
+                            }
+                            viewModel.saveNote(projectId)
+                            while (backStack.size > 1) {
+                                backStack.removeLastOrNull()
+                            }
+                        }
+                    }
+                ) {
+                    Text("예")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showExitDialog = false }
+                ) {
+                    Text("아니오")
+                }
+            }
+        )
+    }
     
     Scaffold(
         modifier = Modifier.background(MaterialTheme.colorScheme.surface),
@@ -123,7 +175,10 @@ fun RecordingScreen(projectId: String) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            RecordingHeader()
+            RecordingHeader(
+                onExitClick = { showExitDialog = true },
+                onBackClick = { showExitDialog = true }
+            )
             Box(modifier = Modifier.weight(1f)) {
                 TranscribeContainer(
                     transcriptItems = transcriptItems,

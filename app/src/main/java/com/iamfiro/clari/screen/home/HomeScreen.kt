@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -20,6 +21,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.iamfiro.clari.core.Repository.NoteRepository
 import com.iamfiro.clari.core.Repository.ProjectRepository
+import com.iamfiro.clari.core.ui.LocalCurrentScreen
+import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.component.Banner
 import com.iamfiro.clari.core.ui.component.Header
 import com.iamfiro.clari.core.ui.component.NavBar
@@ -34,6 +37,7 @@ import com.iamfiro.clari.feature.project.component.ProjectCard
 fun HomeScreen() {
     val noteRepository = remember { NoteRepository() }
     val projectRepository = remember { ProjectRepository() }
+    val currentScreen = LocalCurrentScreen.current
     val viewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -47,6 +51,12 @@ fun HomeScreen() {
     val projects by viewModel.projects.collectAsState()
     val words by viewModel.words.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    LaunchedEffect(currentScreen) {
+        if (currentScreen is Screen.Home) {
+            viewModel.refresh()
+        }
+    }
 
     Scaffold(
         bottomBar = { NavBar() },

@@ -1,5 +1,6 @@
 package com.iamfiro.clari.feature.note.component
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +21,7 @@ import com.iamfiro.clari.R
 import com.iamfiro.clari.core.ui.theme.Dimens
 
 @Composable
-fun RecordingHeader() {
+fun RecordingHeader(onExitClick: () -> Unit = {}, onBackClick: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -29,7 +30,9 @@ fun RecordingHeader() {
         Icon(
             painter = painterResource(R.drawable.arrow_left),
             contentDescription = "back",
-            modifier = Modifier.align(Alignment.CenterStart)
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .clickable { onBackClick() }
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(2.dp), horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.align(Alignment.Center)) {
@@ -42,7 +45,7 @@ fun RecordingHeader() {
         }
 
         TextButton(
-            onClick = {},
+            onClick = onExitClick,
             modifier = Modifier.align(Alignment.CenterEnd).offset(x = 12.dp)
         ) {
             Text(

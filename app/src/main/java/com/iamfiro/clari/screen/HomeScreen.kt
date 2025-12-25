@@ -1,4 +1,4 @@
-package com.iamfiro.clari.screen.home
+package com.iamfiro.clari.screen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,19 +10,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.iamfiro.clari.core.Repository.NoteRepository
 import com.iamfiro.clari.core.Repository.ProjectRepository
-import com.iamfiro.clari.core.ui.LocalCurrentScreen
-import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.component.Banner
 import com.iamfiro.clari.core.ui.component.Header
 import com.iamfiro.clari.core.ui.component.NavBar
@@ -31,17 +26,17 @@ import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.note.component.NewRecordingFloating
 import com.iamfiro.clari.feature.note.component.NoteCard
 import com.iamfiro.clari.feature.project.component.WordCard
+import com.iamfiro.clari.feature.project.model.dummy_words
 import com.iamfiro.clari.feature.project.component.ProjectCard
 
 @Composable
 fun HomeScreen() {
     val noteRepository = remember { NoteRepository() }
     val projectRepository = remember { ProjectRepository() }
-    val currentScreen = LocalCurrentScreen.current
     val viewModel: HomeViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
                 return HomeViewModel(noteRepository, projectRepository) as T
             }
         }
@@ -50,13 +45,6 @@ fun HomeScreen() {
     val notes by viewModel.notes.collectAsState()
     val projects by viewModel.projects.collectAsState()
     val words by viewModel.words.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-
-    LaunchedEffect(currentScreen) {
-        if (currentScreen is Screen.Home) {
-            viewModel.refresh()
-        }
-    }
 
     Scaffold(
         bottomBar = { NavBar() },
@@ -68,16 +56,14 @@ fun HomeScreen() {
                 verticalArrangement = Arrangement.spacedBy(28.dp),
                 modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = 8.dp)
             ) {
+                item { Banner() }
+
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        if (isLoading) {
-                            repeat(3) {
-                                NoteCard(null)
-                            }
-                        } else {
-                            notes.take(3).forEach { note ->
-                                NoteCard(note)
-                            }
+                        SectionTitle("최근 노트")
+
+                        notes.take(3).forEach { note ->
+                            NoteCard(note)
                         }
                     }
                 }
@@ -86,14 +72,8 @@ fun HomeScreen() {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SectionTitle("최근에 사용한 프로젝트")
 
-                        if (isLoading) {
-                            repeat(2) {
-                                ProjectCard(null)
-                            }
-                        } else {
-                            projects.take(2).forEach { project ->
-                                ProjectCard(project)
-                            }
+                        projects.take(2).forEach { project ->
+                            ProjectCard(project)
                         }
                     }
                 }

@@ -2,7 +2,6 @@ package com.iamfiro.clari.core.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -47,11 +46,6 @@ fun NavBar() {
             "folder",
             currentScreen == Screen.ProjectList,
             { backStack.add(Screen.ProjectList) })
-        NavBarIcon(
-            R.drawable.user,
-            "user",
-            currentScreen == Screen.Home,
-            { backStack.add(Screen.Home) })
     }
 }
 
@@ -69,4 +63,3 @@ fun NavBarIcon(icon: Int, name: String, isActive: Boolean, onClick: () -> Boolea
         )
     }
 }
-

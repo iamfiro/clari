@@ -13,6 +13,7 @@ import com.iamfiro.clari.screen.note.NoteListScreen
 import com.iamfiro.clari.screen.OnboardScreen
 import com.iamfiro.clari.screen.project.ProjectDetail
 import com.iamfiro.clari.screen.project.ProjectListScreen
+import com.iamfiro.clari.screen.recording.LanguageSelectScreen
 import com.iamfiro.clari.screen.recording.RecordingScreen
 
 val LocalNavBackStack = staticCompositionLocalOf<NavBackStack<NavKey>> {
@@ -43,7 +44,8 @@ fun AppNav() {
 
             // Recording
             entry<Screen.BeforeRecording> { BeforeRecordingScreen() }
-            entry<Screen.Recording> { screen -> RecordingScreen(screen.projectId) }
+            entry<Screen.LanguageSelectScreen> { LanguageSelectScreen(it.projectId) }
+            entry<Screen.Recording> { RecordingScreen(it.projectId, it.languageCode) }
         }
     )
 }

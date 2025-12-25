@@ -25,7 +25,8 @@ import java.time.format.DateTimeFormatter
 
 class RecordingViewModel(
     context: Context,
-    private val noteRepository: NoteRepository
+    private val noteRepository: NoteRepository,
+    private val languageCode: String = "ko-KR"
 ) : ViewModel() {
     
     companion object {
@@ -243,12 +244,13 @@ class RecordingViewModel(
 
 class RecordingViewModelFactory(
     private val context: Context,
-    private val noteRepository: NoteRepository
+    private val noteRepository: NoteRepository,
+    private val languageCode: String = "ko-KR"
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(RecordingViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return RecordingViewModel(context, noteRepository) as T
+            return RecordingViewModel(context, noteRepository, languageCode) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

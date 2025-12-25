@@ -1,0 +1,376 @@
+# Clari API - Android STT WebSocket Integration Guide
+
+## API Overview
+
+### WebSocket Endpoint
+```
+ws://your-server:3000/stt
+```
+
+### Audio Format Requirements
+- **Sample Rate**: 16000 Hz
+- **Format**: PCM 16-bit
+- **Encoding**: Base64
+
+---
+
+## Message Protocol
+
+### 1. Client → Server (Android → API)
+Android에서 녹음한 오디오를 Base64로 인코딩해서 전송
+
+```json
+{
+  "audio": "base64_encoded_pcm_audio_data"
+}
+```
+
+### 2. Server → Client (API → Android)
+서버가 3가지 타입의 메시지를 전송
+
+#### 2.1 Partial Transcript (실시간 중간 결과)
+```json
+{
+  "type": "partial",
+  "text": "안녕하세요",
+  "chunks": ["안녕하세요"]
+}
+```
+
+#### 2.2 Committed Transcript (확정된 텍스트)
+```json
+{
+  "type": "committed",
+  "text": "안녕하세요. 오늘 날씨가 좋네요.",
+  "chunks": [
+    "안녕하세요.",
+    "오늘 날씨가 좋네요."
+  ]
+}
+```
+
+#### 2.3 Formatted Transcript (GPT로 교정된 최종 텍스트)
+```json
+{
+  "type": "formatted",
+  "text": "안녕하세요. 오늘 날씨가 좋네요.",
+  "chunks": [
+    "안녕하세요.",
+    "오늘 날씨가 좋네요."
+  ]
+}
+```
+
+---
+
+## Android Kotlin Implementation Example
+
+### Dependencies (build.gradle.kts)
+```kotlin
+dependencies {
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+}
+```
+
+### Permission (AndroidManifest.xml)
+```xml
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.INTERNET" />
+```
+
+### Data Classes
+```kotlin
+import com.google.gson.annotations.SerializedName
+
+data class AudioMessage(
+    val audio: String
+)
+
+data class TranscriptMessage(
+    val type: String,
+    val text: String,
+    val chunks: List<String>
+)
+```
+
+### WebSocket Manager
+```kotlin
+import android.media.AudioFormat
+import android.media.AudioRecord
+import android.media.MediaRecorder
+import android.util.Base64
+import android.util.Log
+import com.google.gson.Gson
+import okhttp3.*
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+
+class SttWebSocketManager(
+    private val serverUrl: String,
+    private val onTranscript: (TranscriptMessage) -> Unit
+) {
+    private var webSocket: WebSocket? = null
+    private var audioRecord: AudioRecord? = null
+    private val client = OkHttpClient()
+    private val gson = Gson()
+    
+    companion object {
+        private const val SAMPLE_RATE = 16000
+        private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
+        private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
+        private const val TAG = "SttWebSocket"
+    }
+    
+    fun connect() {
+        val request = Request.Builder()
+            .url(serverUrl)
+            .build()
+        
+        webSocket = client.newWebSocket(request, object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                Log.d(TAG, "WebSocket 연결됨")
+                startRecording()
+            }
+            
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                try {
+                    val message = gson.fromJson(text, TranscriptMessage::class.java)
+                    onTranscript(message)
+                    
+                    when (message.type) {
+                        "partial" -> Log.d(TAG, "📝 [PARTIAL] ${message.text}")
+                        "committed" -> Log.d(TAG, "✅ [COMMITTED] ${message.text}")
+                        "formatted" -> Log.d(TAG, "✨ [FORMATTED] ${message.text}")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "메시지 파싱 오류", e)
+                }
+            }
+            
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                Log.e(TAG, "WebSocket 오류", t)
+                stopRecording()
+            }
+            
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                Log.d(TAG, "WebSocket 종료 중: $reason")
+                stopRecording()
+            }
+        })
+    }
+    
+    private fun startRecording() {
+        val bufferSize = AudioRecord.getMinBufferSize(
+            SAMPLE_RATE,
+            CHANNEL_CONFIG,
+            AUDIO_FORMAT
+        )
+        
+        audioRecord = AudioRecord(
+            MediaRecorder.AudioSource.MIC,
+            SAMPLE_RATE,
+            CHANNEL_CONFIG,
+            AUDIO_FORMAT,
+            bufferSize
+        )
+        
+        audioRecord?.startRecording()
+        
+        Thread {
+            val buffer = ShortArray(bufferSize / 2)
+            
+            while (audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                val readSize = audioRecord?.read(buffer, 0, buffer.size) ?: 0
+                
+                if (readSize > 0) {
+                    // Short array를 byte array로 변환
+                    val byteBuffer = ByteBuffer.allocate(readSize * 2)
+                    byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+                    
+                    for (i in 0 until readSize) {
+                        byteBuffer.putShort(buffer[i])
+                    }
+                    
+                    val audioBytes = byteBuffer.array()
+                    val base64Audio = Base64.encodeToString(audioBytes, Base64.NO_WRAP)
+                    
+                    // 서버로 전송
+                    val message = AudioMessage(audio = base64Audio)
+                    val json = gson.toJson(message)
+                    webSocket?.send(json)
+                }
+            }
+        }.start()
+    }
+    
+    private fun stopRecording() {
+        audioRecord?.apply {
+            if (recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                stop()
+            }
+            release()
+        }
+        audioRecord = null
+    }
+    
+    fun disconnect() {
+        stopRecording()
+        webSocket?.close(1000, "Client closed")
+        webSocket = null
+    }
+}
+```
+
+### Usage Example (Activity/Fragment)
+```kotlin
+class MainActivity : AppCompatActivity() {
+    private lateinit var sttManager: SttWebSocketManager
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // WebSocket 초기화
+        sttManager = SttWebSocketManager(
+            serverUrl = "ws://your-server:3000/stt",
+            onTranscript = { message ->
+                runOnUiThread {
+                    when (message.type) {
+                        "partial" -> {
+                            // 실시간 중간 결과 표시 (회색으로 표시)
+                            updatePartialText(message.text)
+                        }
+                        "committed" -> {
+                            // 확정된 텍스트 표시 (검은색으로 확정)
+                            updateCommittedText(message.text)
+                        }
+                        "formatted" -> {
+                            // GPT로 교정된 최종 텍스트 (교정 완료 마크)
+                            updateFormattedText(message.text)
+                        }
+                    }
+                }
+            }
+        )
+        
+        // 권한 확인 후 연결
+        if (checkPermissions()) {
+            sttManager.connect()
+        }
+    }
+    
+    private fun updatePartialText(text: String) {
+        // 임시 텍스트 표시 로직
+        binding.tvPartial.text = text
+        binding.tvPartial.setTextColor(Color.GRAY)
+    }
+    
+    private fun updateCommittedText(text: String) {
+        // 확정 텍스트 표시 로직
+        binding.tvCommitted.text = text
+        binding.tvCommitted.setTextColor(Color.BLACK)
+    }
+    
+    private fun updateFormattedText(text: String) {
+        // 최종 교정 텍스트 표시 로직
+        binding.tvFormatted.text = text
+        binding.tvFormatted.setTextColor(Color.BLUE)
+    }
+    
+    private fun checkPermissions(): Boolean {
+        return if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.RECORD_AUDIO),
+                100
+            )
+            false
+        } else {
+            true
+        }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        sttManager.disconnect()
+    }
+}
+```
+
+---
+
+## UI Recommendation
+
+### 3단계 텍스트 표시 추천
+
+1. **Partial (회색)**: 실시간으로 변하는 임시 텍스트
+   - 사용자에게 "지금 인식 중" 피드백
+   
+2. **Committed (검은색)**: 확정된 텍스트
+   - 음성 구간이 끝나서 확정된 상태
+   
+3. **Formatted (파란색/굵게)**: GPT로 교정 완료
+   - 최종 결과물, 맞춤법/띄어쓰기 교정 완료
+
+---
+
+## Testing
+
+### 1. 서버 실행
+```bash
+bun run dev
+```
+
+### 2. Android 앱 실행
+- 권한 허용
+- WebSocket 연결
+- 마이크 녹음 시작
+- 말하기 시작 → 실시간 텍스트 확인
+
+---
+
+## Troubleshooting
+
+### 1. 연결 안됨
+- 서버 URL 확인: `ws://` (not `wss://` for local)
+- 서버가 실행 중인지 확인
+- 방화벽 확인
+
+### 2. 오디오가 전송되지 않음
+- 마이크 권한 확인
+- Sample Rate 16000Hz 확인
+- Base64 인코딩 확인
+
+### 3. 텍스트가 표시되지 않음
+- 서버 로그 확인 (`console.log` 출력)
+- WebSocket 메시지 로그 확인
+- JSON 파싱 오류 확인
+
+---
+
+## Server Logs
+서버에서 다음과 같은 로그가 출력됩니다:
+
+```
+WebSocket 연결됨
+🔗 ElevenLabs STT 연결 완료, 오디오 대기 중...
+
+🟢 AUDIO 
+📝 [PARTIAL] 안녕하세요
+✅ [COMMITTED] 안녕하세요.
+✨ [FORMATTED] 안녕하세요.
+```
+
+---
+
+## Notes
+
+- **Chunks**: 긴 텍스트를 화면에 맞게 나눈 배열 (최대 3줄, 각 줄 40자)
+- **Latency**: 
+  - Partial: 실시간 (~100ms)
+  - Committed: 음성 끝난 후 즉시
+  - Formatted: Committed 후 GPT 처리 (~1-2초)

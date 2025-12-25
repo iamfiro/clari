@@ -16,28 +16,41 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import com.iamfiro.clari.core.ui.component.HeaderWithBackButton
-import com.iamfiro.clari.core.ui.component.SearchBar
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.iamfiro.clari.core.Repository.ProjectRepository
+import com.iamfiro.clari.core.ui.component.HeaderWithBackButton
+import com.iamfiro.clari.core.ui.component.SearchBar
 import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.project.component.ProjectCard
-import com.iamfiro.clari.feature.project.model.dummy_project
 
 @Composable
 fun BeforeRecordingScreen() {
-    val backStack = LocalNavBackStack.current;
-    var query by remember { mutableStateOf("") }
+    val backStack = LocalNavBackStack.current
+    val projectRepository = remember { ProjectRepository() }
+    val viewModel: BeforeRecordingViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return BeforeRecordingViewModel(projectRepository) as T
+            }
+        }
+    )
+
+    val projects by viewModel.filteredProjects.collectAsState()
+    val selectedProject by viewModel.selectedProject.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Scaffold(Modifier.fillMaxSize()) { innerPadding ->
         Box(Modifier.fillMaxSize()) {
@@ -47,7 +60,7 @@ fun BeforeRecordingScreen() {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                item { HeaderWithBackButton("녹음을 시작하기 전에\n단어 팩을 선택해주세요") }
+                item { HeaderWithBackButton("녹음을 시작하기 전에\n프로젝트를 선택해주세요") }
 
                 item { Spacer(Modifier.height(2.dp)) }
 
@@ -56,14 +69,20 @@ fun BeforeRecordingScreen() {
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                         modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)
                     ) {
-                        SearchBar(query, { query = it })
+                        SearchBar(searchQuery, { viewModel.updateSearchQuery(it) })
 
-                        ProjectCard(
-                            dummy_project[0],
-                            true
-                        )
-                        dummy_project.map { pack ->
-                            ProjectCard(pack)
+                        if (isLoading) {
+                            repeat(3) {
+                                ProjectCard(null)
+                            }
+                        } else {
+                            projects.forEach { project ->
+                                ProjectCard(
+                                    project = project,
+                                    isSelected = selectedProject?.id == project.id,
+                                    onClick = { viewModel.selectProject(project) }
+                                )
+                            }
                         }
                     }
                 }
@@ -84,17 +103,23 @@ fun BeforeRecordingScreen() {
                             )
                         )
                     )
-
             ) {
                 Button(
                     onClick = {
-                        backStack.add(Screen.Recording("", ""))
+                        selectedProject?.let { project ->
+                            backStack.add(Screen.LanguageSelectScreen(project.id))
+                        }
                     },
+                    enabled = selectedProject != null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(60.dp)
                 ) {
-                    Text("눌러서 시작하기", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        if (selectedProject != null) "다음" else "프로젝트를 선택해주세요",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }

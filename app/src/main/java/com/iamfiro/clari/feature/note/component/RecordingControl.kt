@@ -101,7 +101,7 @@ fun RecordingControl(
                 else -> {
                     Icon(
                         painter = painterResource(
-                            if (isRecording) R.drawable.pause else R.drawable.pause
+                            if (isRecording) R.drawable.stop else R.drawable.mic
                         ),
                         contentDescription = if (isRecording) "녹음 중지" else "녹음 시작",
                         tint = if (isRecording) {

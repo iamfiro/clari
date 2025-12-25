@@ -94,7 +94,7 @@ private fun ProjectCardContent(
             )
 
             Text(
-                "단어 ${project.word.size}개",
+                "지식 ${project.word.size}개",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.secondary,
             )

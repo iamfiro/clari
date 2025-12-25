@@ -135,6 +135,12 @@ private fun TranscribeTextItem(
         previousIsFormatted = item.isFormatted
     }
     
+    val textColor = if (item.isFormatted) {
+        MaterialTheme.colorScheme.primary // 파란색 - Formatted
+    } else {
+        MaterialTheme.colorScheme.onSurface // 기본색 - Committed
+    }
+    
     Column {
         // Formatted 인디케이터 (AI 교정됨 표시)
         AnimatedVisibility(
@@ -157,9 +163,8 @@ private fun TranscribeTextItem(
             }
         }
         
-        // AnimatedContent로 텍스트 변경 시 부드러운 전환
         AnimatedContent(
-            targetState = item.displayChunks to item.isFormatted,
+            targetState = Triple(item.displayChunks, item.isFormatted, textColor),
             transitionSpec = {
                 // formatted 전환 시 더 눈에 띄는 애니메이션
                 if (targetState.second && !initialState.second) {
@@ -171,7 +176,7 @@ private fun TranscribeTextItem(
                 }
             },
             label = "transcript_text_change"
-        ) { (chunks, _) ->
+        ) { (chunks, isFormatted, color) ->
             Column {
                 chunks.forEachIndexed { index, chunk ->
                     // 각 청크별 폰트 사이즈 계산
@@ -182,9 +187,9 @@ private fun TranscribeTextItem(
                         Text(
                             text = chunk,
                             fontSize = chunkFontSize,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = if (isFormatted) FontWeight.SemiBold else FontWeight.Medium,
                             lineHeight = chunkLineHeight,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = color
                         )
                     }
                 }
@@ -193,9 +198,6 @@ private fun TranscribeTextItem(
     }
 }
 
-/**
- * 실시간 인식 중인 텍스트 (Partial)
- */
 @Composable
 private fun PartialTextItem(
     chunks: List<String>

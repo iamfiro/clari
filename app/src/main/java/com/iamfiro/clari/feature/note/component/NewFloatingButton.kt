@@ -18,11 +18,11 @@ import com.iamfiro.clari.core.ui.Screen
 fun NewRecordingFloating(
     modifier: Modifier = Modifier,
 ) {
-    val backStack = LocalNavBackStack.current;
+    val backStack = LocalNavBackStack.current
 
     ExtendedFloatingActionButton(
         modifier = modifier,
-        onClick = { },
+        onClick = { backStack.add(Screen.BeforeRecording) },
         icon = {
             Icon(
                 painter = painterResource(R.drawable.mic),

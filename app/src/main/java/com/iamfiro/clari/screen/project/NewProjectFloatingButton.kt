@@ -1,4 +1,4 @@
-package com.iamfiro.clari.feature.note.component
+package com.iamfiro.clari.screen.project
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -15,24 +15,24 @@ import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.Screen
 
 @Composable
-fun NewRecordingFloating(
+fun NewProjectFloatingButton(
     modifier: Modifier = Modifier,
 ) {
     val backStack = LocalNavBackStack.current;
 
     ExtendedFloatingActionButton(
         modifier = modifier,
-        onClick = { },
+        onClick = { backStack.add(Screen.BeforeRecording) },
         icon = {
             Icon(
-                painter = painterResource(R.drawable.mic),
-                contentDescription = "녹음 추가",
+                painter = painterResource(R.drawable.folder_plus),
+                contentDescription = "프로젝트 추가",
                 Modifier.size(20.dp)
             )
         },
         text = {
             Text(
-                text = "녹음하기",
+                text = "프로젝트 추가",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold
             )

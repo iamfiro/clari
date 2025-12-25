@@ -8,7 +8,7 @@ enum class NoteType {
 }
 
 data class Note(
-    val id: String? = null,
+    val id: String,
     val type: NoteType = NoteType.NOT_READY,
     val name: String,
     val duration: Long,

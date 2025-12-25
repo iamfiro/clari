@@ -36,7 +36,7 @@ fun ProjectListScreen() {
 
     Scaffold(
         bottomBar = { NavBar() },
-        floatingActionButton = { NewRecordingFloating() }
+        floatingActionButton = { NewProjectFloatingButton() }
     ) { innerPadding ->
         Column(Modifier.padding(innerPadding)) {
             Header("프로젝트")

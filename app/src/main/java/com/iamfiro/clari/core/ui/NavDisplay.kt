@@ -37,7 +37,7 @@ fun AppNav() {
             entry<Screen.Home> { HomeScreen() }
 
             entry<Screen.Note> { NoteListScreen() }
-            entry<Screen.NoteDetail> { NoteDetailScreen() }
+            entry<Screen.NoteDetail> { NoteDetailScreen(noteId = it.noteId) }
 
             entry<Screen.ProjectList> { ProjectListScreen() }
             entry<Screen.ProjectDetail> { ProjectDetail() }

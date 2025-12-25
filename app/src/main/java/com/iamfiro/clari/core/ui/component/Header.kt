@@ -25,6 +25,5 @@ fun Header(title: String? = null) {
     ) {
         if(title != null)
             Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) else Text("로고")
-        Icon(painter = painterResource(R.drawable.search), contentDescription = "Search")
     }
 }

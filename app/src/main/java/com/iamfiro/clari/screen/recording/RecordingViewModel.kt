@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 class RecordingViewModel(
     context: Context,
@@ -187,6 +187,7 @@ class RecordingViewModel(
         }
 
         val note = Note(
+            id = "${UUID.randomUUID()}",
             type = NoteType.NOT_READY,
             name = "녹음 ${LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("MM월 dd일 HH:mm"))}",
             duration = _elapsedSeconds.value * 1000,

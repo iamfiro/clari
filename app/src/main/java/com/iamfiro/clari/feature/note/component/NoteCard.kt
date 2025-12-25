@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.R
+import com.iamfiro.clari.core.ui.LocalNavBackStack
+import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.feature.note.model.Note
 import com.iamfiro.clari.util.dateKoreanFormatter
 import com.iamfiro.clari.util.millisToMinutes
@@ -43,14 +46,18 @@ fun NoteCard(note: Note?) {
 
 @Composable
 private fun NoteCardContent(note: Note) {
+    val backStack = LocalNavBackStack.current;
+
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
+            .clickable {
+                backStack.add(Screen.NoteDetail(note.id))
+            }
             .padding(14.dp)
-
     ) {
         Text(
             note.name,

@@ -1,4 +1,4 @@
-package com.iamfiro.clari.screen
+package com.iamfiro.clari.screen.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,8 +10,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.iamfiro.clari.core.Repository.NoteRepository
+import com.iamfiro.clari.core.Repository.ProjectRepository
 import com.iamfiro.clari.core.ui.component.Banner
 import com.iamfiro.clari.core.ui.component.Header
 import com.iamfiro.clari.core.ui.component.NavBar
@@ -20,13 +28,26 @@ import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.note.component.NewRecordingFloating
 import com.iamfiro.clari.feature.note.component.NoteCard
 import com.iamfiro.clari.feature.project.component.WordCard
-import com.iamfiro.clari.feature.project.model.dummy_words
 import com.iamfiro.clari.feature.project.component.ProjectCard
-import com.iamfiro.clari.feature.project.model.dummy_project
-import com.iamfiro.clwari.feature.note.model.dummy_notes
 
 @Composable
 fun HomeScreen() {
+    val noteRepository = remember { NoteRepository() }
+    val projectRepository = remember { ProjectRepository() }
+    val viewModel: HomeViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return HomeViewModel(noteRepository, projectRepository) as T
+            }
+        }
+    )
+
+    val notes by viewModel.notes.collectAsState()
+    val projects by viewModel.projects.collectAsState()
+    val words by viewModel.words.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
     Scaffold(
         bottomBar = { NavBar() },
         floatingActionButton = { NewRecordingFloating() }
@@ -43,8 +64,14 @@ fun HomeScreen() {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SectionTitle("최근 노트")
 
-                        dummy_notes.take(3).map { note ->
-                            NoteCard(note)
+                        if (isLoading) {
+                            repeat(3) {
+                                NoteCard(null)
+                            }
+                        } else {
+                            notes.take(3).forEach { note ->
+                                NoteCard(note)
+                            }
                         }
                     }
                 }
@@ -53,8 +80,14 @@ fun HomeScreen() {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SectionTitle("최근에 사용한 프로젝트")
 
-                        dummy_project.take(2).map { pack ->
-                            ProjectCard(pack)
+                        if (isLoading) {
+                            repeat(2) {
+                                ProjectCard(null)
+                            }
+                        } else {
+                            projects.take(2).forEach { project ->
+                                ProjectCard(project)
+                            }
                         }
                     }
                 }
@@ -63,7 +96,7 @@ fun HomeScreen() {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SectionTitle("자주 등장하는 단어")
 
-                        dummy_words.chunked(2).forEach { row ->
+                        words.chunked(2).forEach { row ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)

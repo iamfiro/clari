@@ -1,4 +1,4 @@
-package com.iamfiro.clari.screen
+package com.iamfiro.clari.screen.note
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -20,19 +20,37 @@ import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.core.ui.component.Header
 import com.iamfiro.clari.core.ui.component.NavBar
 import com.iamfiro.clari.core.ui.theme.Dimens
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.iamfiro.clari.core.Repository.NoteRepository
 import com.iamfiro.clari.feature.note.component.NewRecordingFloating
 import com.iamfiro.clari.feature.note.component.NoteCard
 import com.iamfiro.clari.util.toRelativeDateLabel
-import com.iamfiro.clwari.feature.note.model.dummy_notes
 import java.time.LocalDateTime
 import java.time.ZoneId
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NoteListScreen() {
+    val noteRepository = remember { NoteRepository() }
+    val viewModel: NoteListViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return NoteListViewModel(noteRepository) as T
+            }
+        }
+    )
+
+    val notes by viewModel.notes.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val today = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
 
-    val groupedNotes = dummy_notes
+    val groupedNotes = notes
         .groupBy { it.createdAt }
         .toSortedMap(compareByDescending { it })
 
@@ -49,7 +67,14 @@ fun NoteListScreen() {
                     vertical = 8.dp
                 )
             ) {
-                groupedNotes.forEach { (date, notes) ->
+                if (isLoading) {
+                    repeat(3) {
+                        item {
+                            NoteCard(null)
+                        }
+                    }
+                } else {
+                    groupedNotes.forEach { (date, notes) ->
                     stickyHeader {
                         Row(
                             modifier = Modifier
@@ -79,6 +104,7 @@ fun NoteListScreen() {
 
                     item {
                         Spacer(Modifier.height(12.dp))
+                    }
                     }
                 }
 

@@ -1,4 +1,4 @@
-package com.iamfiro.clari.screen
+package com.iamfiro.clari.screen.note
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,13 +19,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.R
 import com.iamfiro.clari.core.ui.theme.Dimens
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.iamfiro.clari.core.Repository.NoteRepository
 import com.iamfiro.clari.feature.note.component.AISummarySection
 import com.iamfiro.clari.feature.note.component.NoteDetailControl
 import com.iamfiro.clari.feature.note.component.TranscribeSection
-import com.iamfiro.clari.feature.note.model.dummy_note_detail
+import com.iamfiro.clari.feature.note.model.Note
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun NoteDetailScreen() {
+    val repository = remember { NoteRepository() }
+    var note by remember { mutableStateOf<Note?>(null) }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            note = repository.getNoteById("note_001")
+        }
+    }
+
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
@@ -42,12 +59,12 @@ fun NoteDetailScreen() {
                 Icon(painter = painterResource(R.drawable.arrow_left), "back")
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        "발표 주제 '킥'과 관련된 아이디어 논의",
+                        note?.name ?: "",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "2024년 4월 12일 12:11",
+                        note?.recordedAtText ?: "",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -60,8 +77,8 @@ fun NoteDetailScreen() {
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                item { AISummarySection(dummy_note_detail.aiSummary.content) }
-                item { TranscribeSection(dummy_note_detail.transcripts) }
+                item { AISummarySection(note?.aiSummary?.content ?: "") }
+                item { TranscribeSection(note?.transcripts ?: emptyList()) }
             }
 
             NoteDetailControl()

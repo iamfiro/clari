@@ -7,12 +7,12 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.iamfiro.clari.screen.recording.BeforeRecordingScreen
-import com.iamfiro.clari.screen.HomeScreen
-import com.iamfiro.clari.screen.NoteDetailScreen
-import com.iamfiro.clari.screen.NoteListScreen
+import com.iamfiro.clari.screen.home.HomeScreen
+import com.iamfiro.clari.screen.note.NoteDetailScreen
+import com.iamfiro.clari.screen.note.NoteListScreen
 import com.iamfiro.clari.screen.OnboardScreen
-import com.iamfiro.clari.screen.Project.ProjectDetail
-import com.iamfiro.clari.screen.Project.ProjectListScreen
+import com.iamfiro.clari.screen.project.ProjectDetail
+import com.iamfiro.clari.screen.project.ProjectListScreen
 import com.iamfiro.clari.screen.recording.RecordingScreen
 
 val LocalNavBackStack = staticCompositionLocalOf<NavBackStack<NavKey>> {

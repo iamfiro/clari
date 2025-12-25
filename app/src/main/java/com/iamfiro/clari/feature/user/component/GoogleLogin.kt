@@ -3,6 +3,7 @@ package com.iamfiro.clari.feature.user.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,11 +23,14 @@ import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.R
 
 @Composable
-fun GoogleLoginButton() {
+fun GoogleLoginButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(14.dp))
             .border(
                 width = 1.dp,
@@ -34,6 +38,7 @@ fun GoogleLoginButton() {
                 shape = RoundedCornerShape(14.dp)
             )
             .background(MaterialTheme.colorScheme.surface)
+            .clickable(onClick = onClick)
             .padding(vertical = 15.dp)
             .fillMaxWidth()
     ) {
@@ -43,6 +48,6 @@ fun GoogleLoginButton() {
             modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.width(8.dp))
-        Text("Google로 계속하기", style = MaterialTheme.typography.bodyLarge)
+        Text("Google로 계속하기", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
     }
 }

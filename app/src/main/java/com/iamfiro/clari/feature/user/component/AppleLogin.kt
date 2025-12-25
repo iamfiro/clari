@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,12 +38,13 @@ fun AppleLoginButton() {
             .padding(vertical = 15.dp)
             .fillMaxWidth()
     ) {
-        Image(
+        Icon(
             painter = painterResource(R.drawable.apple_logo),
             contentDescription = "Google logo",
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurface
         )
         Spacer(Modifier.width(8.dp))
-        Text("Apple로 계속하기", style = MaterialTheme.typography.bodyLarge)
+        Text("Apple로 계속하기", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
     }
 }

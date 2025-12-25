@@ -5,15 +5,18 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.iamfiro.clari.core.database.dao.LanguagePreferenceDao
+import com.iamfiro.clari.core.database.dao.TokenDao
 import com.iamfiro.clari.core.database.entity.LanguagePreferenceEntity
+import com.iamfiro.clari.core.database.entity.TokenEntity
 
 @Database(
-    entities = [LanguagePreferenceEntity::class],
-    version = 1,
+    entities = [LanguagePreferenceEntity::class, TokenEntity::class],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun languagePreferenceDao(): LanguagePreferenceDao
+    abstract fun tokenDao(): TokenDao
 
     companion object {
         @Volatile

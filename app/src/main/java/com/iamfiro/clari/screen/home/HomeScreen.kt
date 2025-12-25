@@ -15,13 +15,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.iamfiro.clari.core.Repository.NoteRepository
 import com.iamfiro.clari.core.Repository.ProjectRepository
+import com.iamfiro.clari.core.database.AppDatabase
 import com.iamfiro.clari.core.ui.LocalCurrentScreen
+import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.component.Banner
 import com.iamfiro.clari.core.ui.component.Header
@@ -32,9 +35,24 @@ import com.iamfiro.clari.feature.note.component.NewRecordingFloating
 import com.iamfiro.clari.feature.note.component.NoteCard
 import com.iamfiro.clari.feature.project.component.WordCard
 import com.iamfiro.clari.feature.project.component.ProjectCard
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun HomeScreen() {
+    val context = LocalContext.current
+    val backStack = LocalNavBackStack.current
+    val database = remember {
+        AppDatabase.getInstance(context)
+    }
+    
+    LaunchedEffect(Unit) {
+        val token = database.tokenDao().getToken().first()
+        if (token == null) {
+            backStack.clear()
+            backStack.add(Screen.Onboard)
+        }
+    }
+    
     val noteRepository = remember { NoteRepository() }
     val projectRepository = remember { ProjectRepository() }
     val currentScreen = LocalCurrentScreen.current

@@ -45,8 +45,8 @@ fun NavBar() {
         NavBarIcon(
             R.drawable.folder,
             "folder",
-            currentScreen == Screen.WordPack,
-            { backStack.add(Screen.WordPack) })
+            currentScreen == Screen.ProjectList,
+            { backStack.add(Screen.ProjectList) })
         NavBarIcon(
             R.drawable.user,
             "user",

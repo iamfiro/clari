@@ -40,14 +40,13 @@ import com.iamfiro.clari.core.service.model.TranscriptItem
 import com.iamfiro.clari.core.ui.theme.Dimens
 import kotlinx.coroutines.delay
 
-// 문자 길이에 따른 폰트 사이즈 계산
 private fun calculateFontSize(text: String): TextUnit {
     val length = text.length
     return when {
-        length > 100 -> 20.sp   // 매우 긴 텍스트
-        length > 70 -> 24.sp    // 긴 텍스트
-        length > 50 -> 28.sp    // 중간 텍스트
-        else -> 32.sp           // 기본 크기
+        length > 100 -> 20.sp
+        length > 70 -> 24.sp
+        length > 50 -> 28.sp
+        else -> 32.sp
     }
 }
 
@@ -66,16 +65,14 @@ fun TranscribeContainer(
     partialText: SttResponse? = null
 ) {
     val listState = rememberLazyListState()
-    
-    // 아이템 변경 시 (추가, formatted 업데이트) 자동 스크롤
+
     LaunchedEffect(transcriptItems) {
         val totalItems = transcriptItems.size + (if (partialText != null) 1 else 0)
         if (totalItems > 0) {
             listState.animateScrollToItem(index = totalItems - 1)
         }
     }
-    
-    // partial 변경 시에도 스크롤
+
     LaunchedEffect(partialText) {
         val totalItems = transcriptItems.size + (if (partialText != null) 1 else 0)
         if (totalItems > 0) {
@@ -88,7 +85,6 @@ fun TranscribeContainer(
         modifier = Modifier
             .padding(Dimens.ScreenPadding, 12.dp)
     ) {
-        // 확정된 텍스트들 표시 (committed -> formatted로 자동 전환)
         items(
             items = transcriptItems,
             key = { it.id }
@@ -96,8 +92,7 @@ fun TranscribeContainer(
             TranscribeTextItem(item = item)
             Spacer(modifier = Modifier.height(14.dp))
         }
-        
-        // 실시간 인식 중인 텍스트 (Partial)
+
         item {
             AnimatedVisibility(
                 visible = partialText != null,
@@ -109,8 +104,7 @@ fun TranscribeContainer(
                 }
             }
         }
-        
-        // 텍스트가 없을 때 안내 메시지
+
         if (transcriptItems.isEmpty() && partialText == null) {
             item {
                 Text(
@@ -124,15 +118,10 @@ fun TranscribeContainer(
     }
 }
 
-/**
- * 확정된 텍스트 아이템 (committed/formatted)
- * formatted가 적용되면 애니메이션과 함께 텍스트가 변경됨
- */
 @Composable
 private fun TranscribeTextItem(
     item: TranscriptItem
 ) {
-    // formatted 상태 변화 감지를 위한 플래그
     var showFormattedIndicator by remember { mutableStateOf(false) }
     var previousIsFormatted by remember { mutableStateOf(item.isFormatted) }
     

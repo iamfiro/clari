@@ -50,7 +50,7 @@ fun ProjectCard(project: Project, frequentlyUsed: Boolean = false) {
             )
 
             Text(
-                "단어 ${project.wordCount}개",
+                "단어 ${project.word.size}개",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.secondary,
             )

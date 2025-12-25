@@ -18,7 +18,10 @@ sealed interface Screen : NavKey {
     data class NoteDetail(val noteId: String) : Screen
 
     @Serializable
-    data object WordPack : Screen
+    data object ProjectList : Screen
+
+    @Serializable
+    data class ProjectDetail(val projectId: String) : Screen
 
     // Recording
     @Serializable

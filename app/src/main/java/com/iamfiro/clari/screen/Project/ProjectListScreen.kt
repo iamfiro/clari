@@ -1,4 +1,4 @@
-package com.iamfiro.clari.screen
+package com.iamfiro.clari.screen.Project
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,7 +16,7 @@ import com.iamfiro.clari.feature.project.component.ProjectCard
 import com.iamfiro.clari.feature.project.model.dummy_project
 
 @Composable
-fun PackListScreen() {
+fun ProjectListScreen() {
     Scaffold(
         bottomBar = { NavBar() },
         floatingActionButton = { NewRecordingFloating() }

@@ -21,6 +21,9 @@ sealed interface Screen : NavKey {
     data object ProjectList : Screen
 
     @Serializable
+    data object ProjectCreate : Screen
+
+    @Serializable
     data class ProjectDetail(val projectId: String) : Screen
 
     // Recording

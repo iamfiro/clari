@@ -14,7 +14,7 @@ import com.iamfiro.clari.core.ui.Screen
 
 @Composable
 fun AppRoot() {
-    val backStack: NavBackStack<NavKey> = rememberNavBackStack(Screen.Home)
+    val backStack: NavBackStack<NavKey> = rememberNavBackStack(Screen.ProjectList)
 
     val currentScreen = remember {
         derivedStateOf {

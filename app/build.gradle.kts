@@ -75,4 +75,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+    
+    // Coil for image loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
 }

@@ -111,4 +111,124 @@ class ProjectRepository {
             null
         }
     }
+
+    suspend fun createProject(name: String): Project {
+        delay(500) // API 호출 시뮬레이션
+        val newProject = Project(
+            id = (mockProjects.size + 1).toString(),
+            name = name,
+            description = "",
+            publisherId = "user",
+            publisherName = "사용자",
+            thumbnail = "https://example.com/thumb/default.png",
+            word = emptyList(),
+            isDownloaded = true,
+            downloadCount = 0,
+            connector = null
+        )
+        mockProjects.add(newProject)
+        return newProject
+    }
+
+    suspend fun importProjectByLink(link: String): Project? {
+        delay(1000) // API 호출 시뮬레이션
+        // Mock: 링크에서 프로젝트 정보를 가져온다고 가정
+        val importedProject = Project(
+            id = (mockProjects.size + 1).toString(),
+            name = "불러온 프로젝트",
+            description = "링크: $link",
+            publisherId = "external",
+            publisherName = "외부",
+            thumbnail = "https://example.com/thumb/imported.png",
+            word = emptyList(),
+            isDownloaded = true,
+            downloadCount = 0,
+            connector = null
+        )
+        mockProjects.add(importedProject)
+        return importedProject
+    }
+
+    suspend fun removeWordFromProject(projectId: String, wordName: String): Project? {
+        val projectIndex = mockProjects.indexOfFirst { it.id == projectId }
+        return if (projectIndex != -1) {
+            val project = mockProjects[projectIndex]
+            val updatedWords = project.word.filter { it.name != wordName }
+            val updatedProject = project.copy(word = updatedWords)
+            mockProjects[projectIndex] = updatedProject
+            updatedProject
+        } else {
+            null
+        }
+    }
+
+    suspend fun updateConnector(
+        projectId: String,
+        oldConnector: ProjectConnector,
+        newConnector: ProjectConnector
+    ): Project? {
+        val projectIndex = mockProjects.indexOfFirst { it.id == projectId }
+        return if (projectIndex != -1) {
+            val project = mockProjects[projectIndex]
+            val connectors = project.connector?.toMutableList() ?: mutableListOf()
+            val oldIndex = connectors.indexOfFirst { 
+                it.type == oldConnector.type && 
+                it.url == oldConnector.url && 
+                it.name == oldConnector.name 
+            }
+            if (oldIndex != -1) {
+                connectors[oldIndex] = newConnector
+                val updatedProject = project.copy(connector = connectors)
+                mockProjects[projectIndex] = updatedProject
+                updatedProject
+            } else {
+                null
+            }
+        } else {
+            null
+        }
+    }
+
+    suspend fun removeConnector(projectId: String, connector: ProjectConnector): Project? {
+        val projectIndex = mockProjects.indexOfFirst { it.id == projectId }
+        return if (projectIndex != -1) {
+            val project = mockProjects[projectIndex]
+            val connectors = project.connector?.toMutableList() ?: mutableListOf()
+            val removed = connectors.removeIf { 
+                it.type == connector.type && 
+                it.url == connector.url && 
+                it.name == connector.name 
+            }
+            if (removed) {
+                val updatedProject = project.copy(
+                    connector = if (connectors.isEmpty()) null else connectors
+                )
+                mockProjects[projectIndex] = updatedProject
+                updatedProject
+            } else {
+                null
+            }
+        } else {
+            null
+        }
+    }
+
+    suspend fun updateBannerImage(projectId: String, imageUri: String): Project? {
+        delay(500) // API 호출 시뮬레이션
+        val projectIndex = mockProjects.indexOfFirst { it.id == projectId }
+        return if (projectIndex != -1) {
+            val project = mockProjects[projectIndex]
+            val updatedProject = project.copy(thumbnail = imageUri)
+            mockProjects[projectIndex] = updatedProject
+            updatedProject
+        } else {
+            null
+        }
+    }
+
+    suspend fun getShareLink(projectId: String): String {
+        delay(300) // API 호출 시뮬레이션
+        // Mock: 프로젝트 ID를 기반으로 공유 링크 생성
+        return "https://clari.app/share/project/$projectId"
+    }
 }

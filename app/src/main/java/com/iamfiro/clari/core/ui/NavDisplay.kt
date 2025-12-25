@@ -11,7 +11,8 @@ import com.iamfiro.clari.screen.home.HomeScreen
 import com.iamfiro.clari.screen.note.NoteDetailScreen
 import com.iamfiro.clari.screen.note.NoteListScreen
 import com.iamfiro.clari.screen.OnboardScreen
-import com.iamfiro.clari.screen.project.ProjectDetail
+import com.iamfiro.clari.screen.project.ProjectCreateScreen
+import com.iamfiro.clari.screen.project.ProjectDetailScreen
 import com.iamfiro.clari.screen.project.ProjectListScreen
 import com.iamfiro.clari.screen.recording.LanguageSelectScreen
 import com.iamfiro.clari.screen.recording.RecordingScreen
@@ -40,7 +41,8 @@ fun AppNav() {
             entry<Screen.NoteDetail> { NoteDetailScreen(noteId = it.noteId) }
 
             entry<Screen.ProjectList> { ProjectListScreen() }
-            entry<Screen.ProjectDetail> { ProjectDetail() }
+            entry<Screen.ProjectCreate> { ProjectCreateScreen() }
+            entry<Screen.ProjectDetail> { ProjectDetailScreen(projectId = it.projectId) }
 
             // Recording
             entry<Screen.BeforeRecording> { BeforeRecordingScreen() }

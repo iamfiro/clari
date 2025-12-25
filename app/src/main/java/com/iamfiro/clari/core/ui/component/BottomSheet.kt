@@ -191,6 +191,7 @@ fun BottomSheetWithHeader(
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    titleIcon: (@Composable () -> Unit)? = null,
     config: BottomSheetConfig = BottomSheetConfig(),
     actions: List<BottomSheetAction> = emptyList(),
     content: @Composable ColumnScope.() -> Unit
@@ -201,19 +202,25 @@ fun BottomSheetWithHeader(
         modifier = modifier,
         config = config
     ) {
-        // Header
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = Dimens.ScreenPadding)
-                .padding(bottom = 16.dp)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (titleIcon != null) {
+                    titleIcon()
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
             if (subtitle != null) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -223,8 +230,6 @@ fun BottomSheetWithHeader(
                 )
             }
         }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 
         Column(
             modifier = Modifier
@@ -237,6 +242,8 @@ fun BottomSheetWithHeader(
         if (actions.isNotEmpty()) {
             BottomSheetActions(actions = actions)
         }
+
+        Spacer(Modifier.height(12.dp))
     }
 }
 
@@ -501,10 +508,10 @@ private fun BottomSheetActions(
                     Button(
                         onClick = action.onClick,
                         enabled = action.enabled,
-                        modifier = Modifier.fillMaxWidth().height(100.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        modifier = Modifier.fillMaxWidth().height(60.dp),
+                        shape = RoundedCornerShape(9999.dp)
                     ) {
-                        Text(action.text)
+                        Text(action.text, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
 
@@ -512,14 +519,14 @@ private fun BottomSheetActions(
                     Button(
                         onClick = action.onClick,
                         enabled = action.enabled,
-                        modifier = Modifier.fillMaxWidth().height(100.dp),
-                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(60.dp),
+                        shape = RoundedCornerShape(9999.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     ) {
-                        Text(action.text)
+                        Text(action.text, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
 
@@ -527,13 +534,13 @@ private fun BottomSheetActions(
                     Button(
                         onClick = action.onClick,
                         enabled = action.enabled,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(60.dp),
+                        shape = RoundedCornerShape(9999.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text(action.text)
+                        Text(action.text, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
 
@@ -543,7 +550,7 @@ private fun BottomSheetActions(
                         enabled = action.enabled,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(action.text)
+                        Text(action.text, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }

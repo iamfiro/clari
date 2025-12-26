@@ -3,7 +3,7 @@ package com.iamfiro.clari.screen.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.iamfiro.clari.core.repository.KeywordPackRepository
+import com.iamfiro.clari.core.repository.ProjectRepository
 import com.iamfiro.clari.core.repository.NoteRepository
 import com.iamfiro.clari.feature.note.model.Note
 import com.iamfiro.clari.feature.project.model.Project
@@ -15,25 +15,20 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "HomeViewModel"
 
-class HomeViewModel(
-    private val noteRepository: NoteRepository,
-    private val keywordPackRepository: KeywordPackRepository
-) : ViewModel() {
+data class HomeUiState(
+    val notes: List<Note> = emptyList(),
+    val keywordPacks: List<Project> = emptyList(),
+    val words: List<Word> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
 
-    private val _notes = MutableStateFlow<List<Note>>(emptyList())
-    val notes: StateFlow<List<Note>> = _notes.asStateFlow()
+class HomeViewModel : ViewModel() {
+    private val noteRepository = NoteRepository.getInstance()
+    private val projectRepository = ProjectRepository.getInstance()
 
-    private val _keywordPacks = MutableStateFlow<List<Project>>(emptyList())
-    val keywordPacks: StateFlow<List<Project>> = _keywordPacks.asStateFlow()
-
-    private val _words = MutableStateFlow<List<Word>>(emptyList())
-    val words: StateFlow<List<Word>> = _words.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
         loadData()
@@ -41,37 +36,34 @@ class HomeViewModel(
 
     private fun loadData() {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             
             try {
-                // 노트 로드
                 noteRepository.getAllNotes(limit = 10, sort = "recent_used")
                     .onSuccess { notes ->
-                        _notes.value = notes
+                        _uiState.value = _uiState.value.copy(notes = notes)
                         Log.d(TAG, "노트 ${notes.size}개 로드 완료")
                     }
                     .onFailure { e ->
                         Log.e(TAG, "노트 로드 실패", e)
-                        _error.value = "노트를 불러오는데 실패했습니다"
+                        _uiState.value = _uiState.value.copy(error = "노트를 불러오는데 실패했습니다")
                     }
                 
-                // 키워드팩 로드
-                keywordPackRepository.getAllKeywordPacks(limit = 10)
+                projectRepository.getProjects(limit = 10)
                     .onSuccess { packs ->
-                        _keywordPacks.value = packs
-                        Log.d(TAG, "키워드팩 ${packs.size}개 로드 완료")
-                        
-                        // 자주 등장하는 단어 추출 (모든 키워드팩에서 상위 6개)
                         val allWords = packs.flatMap { it.word }.take(6)
-                        _words.value = allWords
+                        _uiState.value = _uiState.value.copy(
+                            keywordPacks = packs,
+                            words = allWords
+                        )
+                        Log.d(TAG, "키워드팩 ${packs.size}개 로드 완료")
                     }
                     .onFailure { e ->
                         Log.e(TAG, "키워드팩 로드 실패", e)
                     }
                     
             } finally {
-                _isLoading.value = false
+                _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
     }

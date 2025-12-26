@@ -34,3 +34,4 @@ interface ExternalResourceApi {
     suspend fun deleteResource(@Path("id") id: String): MessageResponse
 }
 
+

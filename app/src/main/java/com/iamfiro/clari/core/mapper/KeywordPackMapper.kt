@@ -1,7 +1,7 @@
 package com.iamfiro.clari.core.mapper
 
-import com.iamfiro.clari.core.network.dto.KeywordDto
-import com.iamfiro.clari.core.network.dto.KeywordPackDto
+import com.iamfiro.clari.core.network.dto.ProjectWordDTO
+import com.iamfiro.clari.core.network.dto.ProjectDto
 import com.iamfiro.clari.feature.project.model.Project
 import com.iamfiro.clari.feature.project.model.Word
 
@@ -10,7 +10,7 @@ object KeywordPackMapper {
     /**
      * KeywordPackDto -> Project (기존 UI 호환용)
      */
-    fun fromDto(dto: KeywordPackDto): Project {
+    fun fromDto(dto: ProjectDto): Project {
         return Project(
             id = dto.id,
             name = dto.name,
@@ -18,7 +18,7 @@ object KeywordPackMapper {
             publisherId = "user",
             publisherName = "사용자",
             thumbnail = dto.previewImageUrl ?: "",
-            word = dto.keywords.map { keyword ->
+            word = dto.words.map { keyword ->
                 Word(
                     name = keyword.name,
                     meaning = keyword.description
@@ -31,9 +31,9 @@ object KeywordPackMapper {
     }
     
     /**
-     * KeywordDto -> Word
+     * ProjectWordDTO -> Word
      */
-    fun keywordToWord(dto: KeywordDto): Word {
+    fun keywordToWord(dto: ProjectWordDTO): Word {
         return Word(
             name = dto.name,
             meaning = dto.description
@@ -41,20 +41,21 @@ object KeywordPackMapper {
     }
     
     /**
-     * Word -> KeywordDto
+     * Word -> ProjectWordDTO
      */
-    fun wordToKeyword(word: Word): KeywordDto {
-        return KeywordDto(
+    fun wordToKeyword(word: Word): ProjectWordDTO {
+        return ProjectWordDTO(
             name = word.name,
             description = word.meaning
         )
     }
     
     /**
-     * List<Word> -> List<KeywordDto>
+     * List<Word> -> List<ProjectWordDTO>
      */
-    fun wordsToKeywords(words: List<Word>): List<KeywordDto> {
+    fun wordsToKeywords(words: List<Word>): List<ProjectWordDTO> {
         return words.map { wordToKeyword(it) }
     }
 }
+
 

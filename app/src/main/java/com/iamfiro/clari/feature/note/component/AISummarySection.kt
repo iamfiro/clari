@@ -34,7 +34,6 @@ fun AISummarySection(aiSummary: String) {
             aiSummary,
             fontSize = 15.sp,
             lineHeight = 24.sp,
-            color = MaterialTheme.colorScheme.secondary
         )
     }
 }

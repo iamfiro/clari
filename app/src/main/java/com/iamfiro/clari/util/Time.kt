@@ -1,12 +1,17 @@
 package com.iamfiro.clari.util
 
 import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+fun getTodayDateTime(): LocalDateTime {
+    val timeZoneId = ZoneId.systemDefault().toString()
+
+    return LocalDateTime.now(ZoneId.of(timeZoneId))
+}
 
 fun unixTimeToKoreanDate(
     unixTime: Long,

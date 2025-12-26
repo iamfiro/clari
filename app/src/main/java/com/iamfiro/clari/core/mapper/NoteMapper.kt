@@ -70,6 +70,9 @@ object NoteMapper {
         // Transcript 파싱 (새로운 words 구조 우선)
         val (transcripts, formattedText) = parseTranscript(dto.content, speakerMap)
         
+        // 단어별 하이라이트용 words 파싱
+        val words = parseWordsForHighlight(dto.content, speakerMap)
+        
         return Note(
             id = dto.id,
             type = noteType,
@@ -81,7 +84,8 @@ object NoteMapper {
             transcripts = transcripts,
             recordingUrl = dto.recordingUrl,
             speakers = speakers,
-            formattedText = formattedText
+            formattedText = formattedText,
+            words = words.takeIf { it.isNotEmpty() }
         )
     }
     

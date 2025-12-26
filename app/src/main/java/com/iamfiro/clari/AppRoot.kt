@@ -20,13 +20,12 @@ import com.iamfiro.clari.core.ui.Screen
 
 @Composable
 fun AppRoot() {
-    val context = LocalContext.current
     val tokenManager = remember {
         ApiClient.getTokenManager()
     }
     
     var initialScreen by remember { mutableStateOf<Screen?>(null) }
-    
+
     LaunchedEffect(Unit) {
         val isLoggedIn = tokenManager.isLoggedIn()
         initialScreen = if (isLoggedIn) Screen.Home else Screen.Onboard

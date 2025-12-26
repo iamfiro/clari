@@ -11,3 +11,4 @@ data class ExternalResource(
     val updatedAt: String
 )
 
+

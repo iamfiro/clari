@@ -6,15 +6,15 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import com.iamfiro.clari.screen.recording.BeforeRecordingScreen
+import com.iamfiro.clari.screen.recording.project.RecordingProjectSelectionScreen
 import com.iamfiro.clari.screen.home.HomeScreen
-import com.iamfiro.clari.screen.note.NoteDetailScreen
-import com.iamfiro.clari.screen.note.NoteListScreen
+import com.iamfiro.clari.screen.note.detail.NoteDetailScreen
+import com.iamfiro.clari.screen.note.list.NoteListScreen
 import com.iamfiro.clari.screen.OnboardScreen
-import com.iamfiro.clari.screen.project.ProjectCreateScreen
-import com.iamfiro.clari.screen.project.ProjectDetailScreen
-import com.iamfiro.clari.screen.project.ProjectListScreen
-import com.iamfiro.clari.screen.recording.LanguageSelectScreen
+import com.iamfiro.clari.screen.project.create.ProjectCreateScreen
+import com.iamfiro.clari.screen.project.detail.ProjectDetailScreen
+import com.iamfiro.clari.screen.project.list.ProjectListScreen
+import com.iamfiro.clari.screen.recording.language.LanguageSelectScreen
 import com.iamfiro.clari.screen.recording.RecordingScreen
 import com.iamfiro.clari.screen.externalresource.ExternalResourceListScreen
 import com.iamfiro.clari.screen.externalresource.ExternalResourceDetailScreen
@@ -47,7 +47,7 @@ fun AppNav() {
             entry<Screen.ProjectDetail> { ProjectDetailScreen(projectId = it.projectId) }
 
             // Recording
-            entry<Screen.BeforeRecording> { BeforeRecordingScreen() }
+            entry<Screen.BeforeRecording> { RecordingProjectSelectionScreen() }
             entry<Screen.LanguageSelectScreen> { LanguageSelectScreen(it.projectId) }
             entry<Screen.Recording> { 
                 RecordingScreen(

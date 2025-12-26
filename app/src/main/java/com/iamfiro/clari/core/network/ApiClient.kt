@@ -5,7 +5,7 @@ import android.util.Log
 import com.iamfiro.clari.core.config.ApiConfig
 import com.iamfiro.clari.core.network.api.AuthApi
 import com.iamfiro.clari.core.network.api.ExternalResourceApi
-import com.iamfiro.clari.core.network.api.KeywordPackApi
+import com.iamfiro.clari.core.network.api.ProjectAPI
 import com.iamfiro.clari.core.network.api.NoteApi
 import com.iamfiro.clari.core.network.api.RecordingApi
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
@@ -82,8 +82,8 @@ object ApiClient {
         getRetrofit().create(RecordingApi::class.java)
     }
     
-    val keywordPackApi: KeywordPackApi by lazy {
-        getRetrofit().create(KeywordPackApi::class.java)
+    val projectAPI: ProjectAPI by lazy {
+        getRetrofit().create(ProjectAPI::class.java)
     }
     
     val externalResourceApi: ExternalResourceApi by lazy {

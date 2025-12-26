@@ -10,21 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.iamfiro.clari.core.network.ApiClient
-import com.iamfiro.clari.core.repository.AuthRepository
-import com.iamfiro.clari.core.repository.KeywordPackRepository
-import com.iamfiro.clari.core.repository.NoteRepository
-import com.iamfiro.clari.core.ui.LocalCurrentScreen
 import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.component.Header
@@ -32,49 +22,18 @@ import com.iamfiro.clari.core.ui.component.NavBar
 import com.iamfiro.clari.core.ui.component.SectionTitle
 import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.note.component.NewRecordingFloating
-import com.iamfiro.clari.feature.note.component.NoteCard
+import com.iamfiro.clari.feature.note.component.noteCard.NoteCard
+import com.iamfiro.clari.feature.note.component.noteCard.NoteCardSkeleton
 import com.iamfiro.clari.feature.project.component.WordCard
-import com.iamfiro.clari.feature.project.component.ProjectCard
+import com.iamfiro.clari.feature.project.component.projectCard.ProjectCard
+import com.iamfiro.clari.feature.project.component.projectCard.ProjectCardSkeleton
 
 @Composable
 fun HomeScreen() {
-    val context = LocalContext.current
     val backStack = LocalNavBackStack.current
-    
-    val authRepository = remember {
-        AuthRepository.getInstance(ApiClient.getTokenManager())
-    }
-    
-    // 로그인 상태 확인
-    LaunchedEffect(Unit) {
-        if (!authRepository.isLoggedIn()) {
-            backStack.clear()
-            backStack.add(Screen.Onboard)
-        }
-    }
-    
-    val noteRepository = remember { NoteRepository.getInstance() }
-    val keywordPackRepository = remember { KeywordPackRepository.getInstance() }
-    val currentScreen = LocalCurrentScreen.current
-    val viewModel: HomeViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return HomeViewModel(noteRepository, keywordPackRepository) as T
-            }
-        }
-    )
+    val viewModel: HomeViewModel = viewModel()
 
-    val notes by viewModel.notes.collectAsState()
-    val keywordPacks by viewModel.keywordPacks.collectAsState()
-    val words by viewModel.words.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-
-    LaunchedEffect(currentScreen) {
-        if (currentScreen is Screen.Home) {
-            viewModel.refresh()
-        }
-    }
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         bottomBar = { NavBar() },
@@ -88,13 +47,11 @@ fun HomeScreen() {
             ) {
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        if (isLoading) {
-                            repeat(3) {
-                                NoteCard(null)
-                            }
+                        if (uiState.isLoading) {
+                            NoteCardSkeleton()
                         } else {
-                            notes.take(3).forEach { note ->
-                                NoteCard(note)
+                            uiState.notes.take(3).forEach { note ->
+                                NoteCard(note, onClick = { backStack.add(Screen.NoteDetail(note.id)) })
                             }
                         }
                     }
@@ -104,12 +61,10 @@ fun HomeScreen() {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SectionTitle("최근에 사용한 프로젝트")
 
-                        if (isLoading) {
-                            repeat(2) {
-                                ProjectCard(null)
-                            }
+                        if (uiState.isLoading) {
+                            ProjectCardSkeleton()
                         } else {
-                            keywordPacks.take(2).forEach { pack ->
+                            uiState.keywordPacks.take(2).forEach { pack ->
                                 ProjectCard(pack, onClick = { backStack.add(Screen.ProjectDetail(pack.id)) })
                             }
                         }
@@ -120,7 +75,7 @@ fun HomeScreen() {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SectionTitle("자주 등장하는 단어")
 
-                        words.chunked(2).forEach { row ->
+                        uiState.words.chunked(2).forEach { row ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)

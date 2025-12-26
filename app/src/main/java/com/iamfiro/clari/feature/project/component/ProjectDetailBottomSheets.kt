@@ -1,7 +1,5 @@
 package com.iamfiro.clari.feature.project.component
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
@@ -44,7 +42,6 @@ import com.iamfiro.clari.core.ui.component.BottomSheetWithHeader
 import com.iamfiro.clari.core.ui.component.ConfirmBottomSheet
 import com.iamfiro.clari.feature.project.model.ProjectConnector
 import com.iamfiro.clari.feature.project.model.ProjectConnectorType
-import com.iamfiro.clari.screen.project.ProjectDetailViewModel
 
 @Composable
 fun AddWordBottomSheet(

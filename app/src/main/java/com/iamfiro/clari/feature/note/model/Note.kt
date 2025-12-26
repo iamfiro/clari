@@ -19,6 +19,7 @@ data class Note(
     val recordingUrl: String? = null,
     val speakers: List<Speaker> = emptyList(),
     val formattedText: String? = null, // 전체 포맷된 텍스트
+    val words: List<TranscriptWord>? = null, // 단어별 하이라이트용
 )
 
 data class AiSummary(

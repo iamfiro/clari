@@ -139,7 +139,6 @@ fun ExternalResourceDetailScreen(resourceId: String) {
                             .verticalScroll(rememberScrollState())
                             .padding(horizontal = Dimens.ScreenPadding)
                     ) {
-                        // 리소스 정보
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -187,7 +186,6 @@ fun ExternalResourceDetailScreen(resourceId: String) {
 
                         Spacer(Modifier.height(24.dp))
 
-                        // 스크랩된 콘텐츠
                         if (!resource!!.scrapedContent.isNullOrBlank()) {
                             SectionTitle("스크랩된 내용")
                             Spacer(Modifier.height(12.dp))
@@ -227,7 +225,6 @@ fun ExternalResourceDetailScreen(resourceId: String) {
         }
     }
 
-    // 제목 편집 바텀시트
     BottomSheetWithHeader(
         visible = showEditSheet,
         onDismiss = {
@@ -263,4 +260,3 @@ fun ExternalResourceDetailScreen(resourceId: String) {
         }
     }
 }
-

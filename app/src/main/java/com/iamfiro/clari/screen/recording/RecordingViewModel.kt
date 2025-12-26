@@ -36,47 +36,36 @@ class RecordingViewModel(
     private val recordingSessionService = RecordingSessionService(ApiClient.getTokenManager())
     private val audioRecorderService = AudioRecorderService(context)
 
-    // 연결 상태
     val connectionState: StateFlow<SessionConnectionState> = recordingSessionService.connectionState
 
-    // 녹음 상태
     val recordingState = audioRecorderService.recordingState
 
-    // 세션 정보
     private val _sessionId = MutableStateFlow<String?>(null)
     val sessionId: StateFlow<String?> = _sessionId.asStateFlow()
 
     private val _noteId = MutableStateFlow<String?>(null)
     val noteId: StateFlow<String?> = _noteId.asStateFlow()
 
-    // 실시간 텍스트
     val partialText: StateFlow<String?> = recordingSessionService.partialText
 
-    // 확정된 텍스트 목록
     private val _transcriptItems = MutableStateFlow<List<TranscriptItem>>(emptyList())
     val transcriptItems: StateFlow<List<TranscriptItem>> = _transcriptItems.asStateFlow()
 
-    // 키워드 탐지
     private val _detectedKeywords = MutableStateFlow<List<KeywordHit>>(emptyList())
     val detectedKeywords: StateFlow<List<KeywordHit>> = _detectedKeywords.asStateFlow()
 
-    // 리소스 힌트
     private val _resourceHints = MutableStateFlow<List<ResourceHint>>(emptyList())
     val resourceHints: StateFlow<List<ResourceHint>> = _resourceHints.asStateFlow()
 
-    // 녹음 진행 중 여부
     private val _isRecording = MutableStateFlow(false)
     val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
 
-    // 세션 생성 중
     private val _isCreatingSession = MutableStateFlow(false)
     val isCreatingSession: StateFlow<Boolean> = _isCreatingSession.asStateFlow()
 
-    // 경과 시간 (초)
     private val _elapsedSeconds = MutableStateFlow(0L)
     val elapsedSeconds: StateFlow<Long> = _elapsedSeconds.asStateFlow()
 
-    // 에러
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
     
@@ -90,14 +79,12 @@ class RecordingViewModel(
         Log.d(TAG, "KeywordPacks: $keywordPackIds")
         Log.d(TAG, "ExternalResources: $externalResourceIds")
 
-        // 오디오 청크 전송
         viewModelScope.launch {
             audioRecorderService.audioChunks.collect { base64Audio ->
                 recordingSessionService.sendAudio(base64Audio)
             }
         }
 
-        // Committed 텍스트 수집
         viewModelScope.launch {
             recordingSessionService.committedTexts.collect { text ->
                 Log.d(TAG, "Committed: $text")

@@ -34,5 +34,17 @@ sealed interface Screen : NavKey {
     data object BeforeRecording : Screen
 
     @Serializable
-    data class Recording(val projectId: String, val languageCode: String) : Screen
+    data class Recording(
+        val projectId: String,
+        val languageCode: String,
+        val keywordPackIds: List<String> = emptyList(),
+        val externalResourceIds: List<String> = emptyList()
+    ) : Screen
+
+    // External Resources
+    @Serializable
+    data object ExternalResourceList : Screen
+
+    @Serializable
+    data class ExternalResourceDetail(val resourceId: String) : Screen
 }

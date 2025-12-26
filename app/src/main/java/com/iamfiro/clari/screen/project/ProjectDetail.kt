@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.iamfiro.clari.R
-import com.iamfiro.clari.core.Repository.ProjectRepository
+import com.iamfiro.clari.core.repository.KeywordPackRepository
 import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.component.SectionTitle
 import com.iamfiro.clari.core.ui.theme.Dimens
@@ -73,12 +73,12 @@ import com.iamfiro.clari.feature.project.model.ProjectConnectorType
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProjectDetailScreen(projectId: String) {
-    val projectRepository = remember { ProjectRepository() }
+    val keywordPackRepository = remember { KeywordPackRepository.getInstance() }
     val viewModel: ProjectDetailViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                return ProjectDetailViewModel(projectRepository, projectId) as T
+                return ProjectDetailViewModel(keywordPackRepository, projectId) as T
             }
         }
     )
@@ -86,6 +86,8 @@ fun ProjectDetailScreen(projectId: String) {
     val project by viewModel.project.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val aiSuggestions by viewModel.aiSuggestions.collectAsState()
+    val isAiLoading by viewModel.isAiLoading.collectAsState()
     val backStack = LocalNavBackStack.current
     val context = LocalContext.current
 
@@ -355,6 +357,7 @@ fun ProjectDetailScreen(projectId: String) {
             showAddWordSheet = false
             wordName = ""
             wordMeaning = ""
+            viewModel.clearAiSuggestions()
         },
         wordName = wordName,
         wordMeaning = wordMeaning,
@@ -365,7 +368,11 @@ fun ProjectDetailScreen(projectId: String) {
             showAddWordSheet = false
             wordName = ""
             wordMeaning = ""
-        }
+            viewModel.clearAiSuggestions()
+        },
+        aiSuggestions = aiSuggestions,
+        isAiLoading = isAiLoading,
+        onGetAiSuggestions = { name -> viewModel.getAiSuggestions(name) }
     )
 
     DeleteWordBottomSheet(

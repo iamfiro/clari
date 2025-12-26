@@ -9,11 +9,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
+import com.iamfiro.clari.core.network.ApiClient
 import com.skills.app.core.ui.theme.ClariTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // API 클라이언트 초기화
+        ApiClient.initialize(applicationContext)
+        
         enableEdgeToEdge()
 
         setContent {

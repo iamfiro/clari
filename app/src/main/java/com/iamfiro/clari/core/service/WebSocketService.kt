@@ -2,6 +2,7 @@ package com.iamfiro.clari.core.service
 
 import android.util.Log
 import com.iamfiro.clari.core.config.ApiConfig
+import com.iamfiro.clari.core.network.TokenManager
 import com.iamfiro.clari.core.service.model.AudioMessage
 import com.iamfiro.clari.core.service.model.SttResponse
 import com.iamfiro.clari.core.service.model.SttResponseType
@@ -24,7 +25,7 @@ import okhttp3.WebSocketListener
 import okio.ByteString
 import java.util.concurrent.TimeUnit
 
-class WebSocketService {
+class WebSocketService(private val tokenManager: TokenManager) {
     
     companion object {
         private const val TAG = "WebSocketService"
@@ -59,6 +60,7 @@ class WebSocketService {
     fun connect() {
         Log.d(TAG, "========== WebSocket 연결 시도 ==========")
         Log.d(TAG, "현재 상태: ${_connectionState.value}")
+        Log.d(TAG, "WebSocket 인스턴스: $webSocket")
         
         if (_connectionState.value == ConnectionState.Connected ||
             _connectionState.value == ConnectionState.Connecting) {
@@ -67,27 +69,79 @@ class WebSocketService {
         }
         
         _connectionState.value = ConnectionState.Connecting
+        Log.d(TAG, "연결 상태 변경: Connecting")
         
         val endpoint = ApiConfig.WebSocket.STT_ENDPOINT
         Log.d(TAG, "연결 URL: $endpoint")
         
-        val request = Request.Builder()
+        // 토큰 가져오기
+        Log.d(TAG, "세션 토큰 조회 시작...")
+        val token = tokenManager.getSessionTokenBlocking()
+        Log.d(TAG, "세션 토큰 조회 완료 - 토큰 존재: ${!token.isNullOrEmpty()}")
+        if (!token.isNullOrEmpty()) {
+            val tokenPreview = if (token.length > 50) {
+                "${token.take(20)}...${token.takeLast(20)}"
+            } else {
+                token
+            }
+            Log.d(TAG, "토큰 길이: ${token.length}, 미리보기: $tokenPreview")
+        } else {
+            Log.e(TAG, "⚠️ 세션 토큰이 null이거나 비어있음!")
+        }
+        
+        val requestBuilder = Request.Builder()
             .url(endpoint)
-            .build()
         
-        Log.d(TAG, "Request 생성 완료: $request")
+        // Authorization 헤더 추가
+        if (!token.isNullOrEmpty()) {
+            requestBuilder.header("Authorization", "Bearer $token")
+            Log.d(TAG, "✅ Authorization 헤더 추가됨: Bearer ${token.take(20)}...")
+        } else {
+            Log.e(TAG, "❌ 세션 토큰 없음 - Authorization 헤더 생략")
+        }
         
+        val request = requestBuilder.build()
+        
+        // Request 상세 정보 로깅
+        Log.d(TAG, "========== Request 정보 ==========")
+        Log.d(TAG, "URL: ${request.url}")
+        Log.d(TAG, "Method: ${request.method}")
+        Log.d(TAG, "Headers:")
+        request.headers.forEach { header ->
+            val headerValue = if (header.first == "Authorization") {
+                "Bearer ${header.second.take(20)}..."
+            } else {
+                header.second
+            }
+            Log.d(TAG, "  ${header.first}: $headerValue")
+        }
+        Log.d(TAG, "=================================")
+        
+        Log.d(TAG, "OkHttpClient 설정:")
+        Log.d(TAG, "  Connect Timeout: ${client.connectTimeoutMillis}ms")
+        Log.d(TAG, "  Read Timeout: ${client.readTimeoutMillis}ms")
+        Log.d(TAG, "  Write Timeout: ${client.writeTimeoutMillis}ms")
+        Log.d(TAG, "  Ping Interval: ${client.pingIntervalMillis}ms")
+        
+        Log.d(TAG, "newWebSocket() 호출 시작...")
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 Log.d(TAG, "========== WebSocket 연결 성공 ==========")
-                Log.d(TAG, "Response: $response")
+                Log.d(TAG, "✅ 연결 성공!")
                 Log.d(TAG, "Response Code: ${response.code}")
                 Log.d(TAG, "Response Message: ${response.message}")
-                Log.d(TAG, "Response Headers: ${response.headers}")
+                Log.d(TAG, "Response Protocol: ${response.protocol}")
+                Log.d(TAG, "Response Headers:")
+                response.headers.forEach { header ->
+                    Log.d(TAG, "  ${header.first}: ${header.second}")
+                }
+                Log.d(TAG, "Response Body: ${response.body}")
+                Log.d(TAG, "WebSocket 객체: $webSocket")
                 
                 CoroutineScope(Dispatchers.Main).launch {
                     _connectionState.value = ConnectionState.Connected
+                    Log.d(TAG, "연결 상태 변경: Connected")
                 }
             }
             
@@ -127,18 +181,43 @@ class WebSocketService {
             
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 Log.e(TAG, "========== WebSocket 연결 실패 ==========")
+                Log.e(TAG, "❌ 연결 실패!")
                 Log.e(TAG, "에러 메시지: ${t.message}")
                 Log.e(TAG, "에러 타입: ${t::class.java.simpleName}")
-                Log.e(TAG, "Response: $response")
-                Log.e(TAG, "Stack Trace:", t)
+                Log.e(TAG, "에러 클래스: ${t.javaClass.name}")
+                
+                if (response != null) {
+                    Log.e(TAG, "Response Code: ${response.code}")
+                    Log.e(TAG, "Response Message: ${response.message}")
+                    Log.e(TAG, "Response Headers:")
+                    response.headers.forEach { header ->
+                        Log.e(TAG, "  ${header.first}: ${header.second}")
+                    }
+                    try {
+                        val body = response.body?.string()
+                        Log.e(TAG, "Response Body: $body")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Response Body 읽기 실패: ${e.message}")
+                    }
+                } else {
+                    Log.e(TAG, "Response: null")
+                }
+                
+                Log.e(TAG, "WebSocket 객체: $webSocket")
+                Log.e(TAG, "Stack Trace:")
+                t.printStackTrace()
                 
                 CoroutineScope(Dispatchers.Main).launch {
-                    _connectionState.value = ConnectionState.Error(t.message ?: "연결 실패")
+                    val errorMessage = t.message ?: "연결 실패"
+                    _connectionState.value = ConnectionState.Error(errorMessage)
+                    Log.e(TAG, "연결 상태 변경: Error($errorMessage)")
                 }
             }
         })
         
-        Log.d(TAG, "WebSocket 객체 생성 완료: $webSocket")
+        Log.d(TAG, "newWebSocket() 호출 완료")
+        Log.d(TAG, "WebSocket 객체: $webSocket")
+        Log.d(TAG, "연결 대기 중... (비동기)")
     }
 
     private suspend fun handleMessage(text: String) {
@@ -180,8 +259,17 @@ class WebSocketService {
     fun sendAudio(base64Audio: String) {
         sendCount++
         
-        if (_connectionState.value != ConnectionState.Connected) {
-            Log.w(TAG, "[전송 #$sendCount] 연결되지 않음. 현재 상태: ${_connectionState.value}")
+        val currentState = _connectionState.value
+        if (currentState != ConnectionState.Connected) {
+            if (sendCount % 10 == 1) {
+                Log.w(TAG, "[전송 #$sendCount] ❌ 연결되지 않음. 현재 상태: $currentState")
+                Log.w(TAG, "WebSocket 객체: $webSocket")
+            }
+            return
+        }
+        
+        if (webSocket == null) {
+            Log.e(TAG, "[전송 #$sendCount] ❌ WebSocket 객체가 null!")
             return
         }
         
@@ -195,20 +283,23 @@ class WebSocketService {
                 Log.d(TAG, "Base64 길이: ${base64Audio.length}")
                 Log.d(TAG, "JSON 메시지 길이: ${jsonMessage.length}")
                 Log.d(TAG, "JSON 메시지 앞부분: ${jsonMessage.take(100)}...")
+                Log.d(TAG, "WebSocket 상태: $currentState")
             }
             
             val success = webSocket?.send(jsonMessage) ?: false
             
             if (sendCount % 10 == 1) {
-                Log.d(TAG, "전송 결과: $success")
+                Log.d(TAG, "전송 결과: ${if (success) "✅ 성공" else "❌ 실패"}")
             }
             
             if (!success) {
-                Log.e(TAG, "[전송 #$sendCount] 전송 실패!")
+                Log.e(TAG, "[전송 #$sendCount] ❌ 전송 실패! WebSocket: $webSocket")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "[전송 #$sendCount] 전송 중 에러: ${e.message}")
-            Log.e(TAG, "Stack Trace:", e)
+            Log.e(TAG, "[전송 #$sendCount] ❌ 전송 중 에러: ${e.message}")
+            Log.e(TAG, "에러 타입: ${e::class.java.simpleName}")
+            Log.e(TAG, "Stack Trace:")
+            e.printStackTrace()
         }
     }
 

@@ -20,13 +20,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.iamfiro.clari.core.Repository.NoteRepository
-import com.iamfiro.clari.core.Repository.ProjectRepository
-import com.iamfiro.clari.core.database.AppDatabase
+import com.iamfiro.clari.core.network.ApiClient
+import com.iamfiro.clari.core.repository.AuthRepository
+import com.iamfiro.clari.core.repository.KeywordPackRepository
+import com.iamfiro.clari.core.repository.NoteRepository
 import com.iamfiro.clari.core.ui.LocalCurrentScreen
 import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.Screen
-import com.iamfiro.clari.core.ui.component.Banner
 import com.iamfiro.clari.core.ui.component.Header
 import com.iamfiro.clari.core.ui.component.NavBar
 import com.iamfiro.clari.core.ui.component.SectionTitle
@@ -35,38 +35,38 @@ import com.iamfiro.clari.feature.note.component.NewRecordingFloating
 import com.iamfiro.clari.feature.note.component.NoteCard
 import com.iamfiro.clari.feature.project.component.WordCard
 import com.iamfiro.clari.feature.project.component.ProjectCard
-import kotlinx.coroutines.flow.first
 
 @Composable
 fun HomeScreen() {
     val context = LocalContext.current
     val backStack = LocalNavBackStack.current
-    val database = remember {
-        AppDatabase.getInstance(context)
+    
+    val authRepository = remember {
+        AuthRepository.getInstance(ApiClient.getTokenManager())
     }
     
+    // 로그인 상태 확인
     LaunchedEffect(Unit) {
-        val token = database.tokenDao().getToken().first()
-        if (token == null) {
+        if (!authRepository.isLoggedIn()) {
             backStack.clear()
             backStack.add(Screen.Onboard)
         }
     }
     
-    val noteRepository = remember { NoteRepository() }
-    val projectRepository = remember { ProjectRepository() }
+    val noteRepository = remember { NoteRepository.getInstance() }
+    val keywordPackRepository = remember { KeywordPackRepository.getInstance() }
     val currentScreen = LocalCurrentScreen.current
     val viewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return HomeViewModel(noteRepository, projectRepository) as T
+                return HomeViewModel(noteRepository, keywordPackRepository) as T
             }
         }
     )
 
     val notes by viewModel.notes.collectAsState()
-    val projects by viewModel.projects.collectAsState()
+    val keywordPacks by viewModel.keywordPacks.collectAsState()
     val words by viewModel.words.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
@@ -109,8 +109,8 @@ fun HomeScreen() {
                                 ProjectCard(null)
                             }
                         } else {
-                            projects.take(2).forEach { project ->
-                                ProjectCard(project)
+                            keywordPacks.take(2).forEach { pack ->
+                                ProjectCard(pack)
                             }
                         }
                     }

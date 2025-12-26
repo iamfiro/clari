@@ -16,13 +16,15 @@ import com.iamfiro.clari.screen.project.ProjectDetailScreen
 import com.iamfiro.clari.screen.project.ProjectListScreen
 import com.iamfiro.clari.screen.recording.LanguageSelectScreen
 import com.iamfiro.clari.screen.recording.RecordingScreen
+import com.iamfiro.clari.screen.externalresource.ExternalResourceListScreen
+import com.iamfiro.clari.screen.externalresource.ExternalResourceDetailScreen
 
 val LocalNavBackStack = staticCompositionLocalOf<NavBackStack<NavKey>> {
     error("NavBackStack not provided")
 }
 
 val LocalCurrentScreen = staticCompositionLocalOf<Screen> {
-    error("CurrentScreen not provided")
+error("CurrentScreen not provided")
 }
 
 @Composable
@@ -47,7 +49,18 @@ fun AppNav() {
             // Recording
             entry<Screen.BeforeRecording> { BeforeRecordingScreen() }
             entry<Screen.LanguageSelectScreen> { LanguageSelectScreen(it.projectId) }
-            entry<Screen.Recording> { RecordingScreen(it.projectId, it.languageCode) }
+            entry<Screen.Recording> { 
+                RecordingScreen(
+                    projectId = it.projectId, 
+                    languageCode = it.languageCode,
+                    keywordPackIds = it.keywordPackIds,
+                    externalResourceIds = it.externalResourceIds
+                ) 
+            }
+
+            // External Resources
+            entry<Screen.ExternalResourceList> { ExternalResourceListScreen() }
+            entry<Screen.ExternalResourceDetail> { ExternalResourceDetailScreen(resourceId = it.resourceId) }
         }
     )
 }

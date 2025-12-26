@@ -1,4 +1,4 @@
-package com.iamfiro.clari.core.Repository
+package com.iamfiro.clari.core.repository
 
 import com.iamfiro.clari.core.database.dao.LanguagePreferenceDao
 import com.iamfiro.clari.core.database.entity.LanguagePreferenceEntity

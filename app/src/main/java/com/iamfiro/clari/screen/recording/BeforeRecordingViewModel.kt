@@ -1,18 +1,25 @@
 package com.iamfiro.clari.screen.recording
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.iamfiro.clari.core.Repository.ProjectRepository
+import com.iamfiro.clari.core.repository.ExternalResourceRepository
+import com.iamfiro.clari.core.repository.KeywordPackRepository
+import com.iamfiro.clari.feature.externalresource.model.ExternalResource
 import com.iamfiro.clari.feature.project.model.Project
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+private const val TAG = "BeforeRecordingViewModel"
+
 class BeforeRecordingViewModel(
-    private val projectRepository: ProjectRepository
+    private val keywordPackRepository: KeywordPackRepository,
+    private val externalResourceRepository: ExternalResourceRepository
 ) : ViewModel() {
 
+    // 키워드팩 (프로젝트)
     private val _projects = MutableStateFlow<List<Project>>(emptyList())
     val projects: StateFlow<List<Project>> = _projects.asStateFlow()
 
@@ -25,23 +32,46 @@ class BeforeRecordingViewModel(
     private val _selectedProject = MutableStateFlow<Project?>(null)
     val selectedProject: StateFlow<Project?> = _selectedProject.asStateFlow()
 
+    // 외부 리소스
+    private val _externalResources = MutableStateFlow<List<ExternalResource>>(emptyList())
+    val externalResources: StateFlow<List<ExternalResource>> = _externalResources.asStateFlow()
+
+    private val _selectedResourceIds = MutableStateFlow<List<String>>(emptyList())
+    val selectedResourceIds: StateFlow<List<String>> = _selectedResourceIds.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     init {
-        loadProjects()
+        loadData()
     }
 
-    private fun loadProjects() {
+    private fun loadData() {
         viewModelScope.launch {
             _isLoading.value = true
-            try {
-                val allProjects = projectRepository.getAllProjects()
-                _projects.value = allProjects
-                _filteredProjects.value = allProjects
-            } finally {
-                _isLoading.value = false
-            }
+            
+            // 키워드팩 로드
+            keywordPackRepository.getAllKeywordPacks()
+                .onSuccess { packs ->
+                    _projects.value = packs
+                    _filteredProjects.value = packs
+                    Log.d(TAG, "키워드팩 ${packs.size}개 로드 완료")
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "키워드팩 로드 실패", e)
+                }
+            
+            // 외부 리소스 로드
+            externalResourceRepository.getAllResources()
+                .onSuccess { resources ->
+                    _externalResources.value = resources
+                    Log.d(TAG, "외부 리소스 ${resources.size}개 로드 완료")
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "외부 리소스 로드 실패", e)
+                }
+            
+            _isLoading.value = false
         }
     }
 
@@ -70,8 +100,22 @@ class BeforeRecordingViewModel(
     fun clearSelection() {
         _selectedProject.value = null
     }
+
+    fun toggleResourceSelection(resourceId: String) {
+        val current = _selectedResourceIds.value.toMutableList()
+        if (current.contains(resourceId)) {
+            current.remove(resourceId)
+        } else {
+            current.add(resourceId)
+        }
+        _selectedResourceIds.value = current
+    }
+
+    fun getSelectedKeywordPackIds(): List<String> {
+        return _selectedProject.value?.let { listOf(it.id) } ?: emptyList()
+    }
+
+    fun getSelectedResourceIds(): List<String> {
+        return _selectedResourceIds.value
+    }
 }
-
-
-
-

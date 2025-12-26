@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.iamfiro.clari.core.Repository.LanguageRepository
+import com.iamfiro.clari.core.repository.LanguageRepository
 import com.iamfiro.clari.core.database.AppDatabase
 import com.iamfiro.clari.feature.recording.Language
 import kotlinx.coroutines.flow.MutableStateFlow

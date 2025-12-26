@@ -1,376 +1,959 @@
-# Clari API - Android STT WebSocket Integration Guide
+# Clari API Backend Specification
+# Generated: 2025-12-25
+# Base URL: http://localhost:3000 (dev)
 
-## API Overview
+## 1. Overview
+- Runtime: Bun
+- Framework: Hono
+- ORM: Prisma
+- Database: PostgreSQL
+- Base URL: http://localhost:3000
+- Auth: JWT Bearer Token
+- WebSocket: Native Bun WebSocket support
 
-### WebSocket Endpoint
+## 2. File & Route Structure
 ```
-ws://your-server:3000/stt
+src/
+  index.ts - Main app entry
+  routes/
+    auth.ts - Authentication (Google OAuth)
+    note.ts - Note CRUD operations
+    recording.ts - Recording session management + WebSocket
+    stt.ts - Real-time STT WebSocket
+    keywordpack.ts - Keyword pack management + AI features
+    externalresource.ts - External resource scraping (Firecrawl)
+  middleware/
+    auth.ts - JWT authentication middleware
+  utils/
+    jwt.ts - Token generation/verification
+prisma/
+  schema.prisma - Database schema
 ```
 
-### Audio Format Requirements
-- **Sample Rate**: 16000 Hz
-- **Format**: PCM 16-bit
-- **Encoding**: Base64
+## 3. Database Models
 
----
-
-## Message Protocol
-
-### 1. Client → Server (Android → API)
-Android에서 녹음한 오디오를 Base64로 인코딩해서 전송
-
-```json
+### User
+```typescript
 {
-  "audio": "base64_encoded_pcm_audio_data"
+  id: string (UUID)
+  email: string (unique)
+  name: string?
+  googleId: string? (unique)
+  profileUrl: string?
+  createdAt: DateTime
+  updatedAt: DateTime
 }
 ```
 
-### 2. Server → Client (API → Android)
-서버가 3가지 타입의 메시지를 전송
+### Note
+```typescript
+{
+  id: string (UUID)
+  title: string
+  content: string? (Text, contains transcript JSON)
+  aiSummary: string? (Text)
+  speakers: Json? (array of speaker objects)
+  durationInSeconds: number
+  isPublic: boolean
+  recordingUrl: string?
+  recordingStatus: "pending" | "recording" | "completed" | "failed"
+  createdAt: DateTime
+  updatedAt: DateTime
+  lastUpdated: DateTime
+  authorId: string
+  keywordPackIds: string[] (array of IDs)
+  externalResourceIds: string[] (array of IDs)
+}
+```
 
-#### 2.1 Partial Transcript (실시간 중간 결과)
+### KeywordPack
+```typescript
+{
+  id: string (UUID)
+  name: string
+  keywords: Json (array of {name: string, description: string})
+  createdAt: DateTime
+  updatedAt: DateTime
+  isPublic: boolean
+  previewImageUrl: string?
+  authorId: string
+}
+```
+
+### ExternalResource
+```typescript
+{
+  id: string (UUID)
+  url: string
+  displayUrl: string (URL without query params)
+  title: string (max 10 chars)
+  logoUrl: string?
+  scrapedContent: string? (Text, markdown from Firecrawl)
+  metadata: Json?
+  createdAt: DateTime
+  updatedAt: DateTime
+  authorId: string
+}
+```
+
+## 4. Common Types & Patterns
+
+### Authentication Header
+```
+Authorization: Bearer <JWT_TOKEN>
+```
+
+### Error Response Format
 ```json
+{
+  "error": "Error message"
+}
+```
+
+### Pagination (Query params)
+```
+?limit=20 (default: 10-50 depending on endpoint)
+?sort=recent_used|recent_created (for notes)
+```
+
+## 5. API Routes
+
+### [routes/auth.ts] - /auth/*
+
+#### POST /auth/google
+- Auth: Public
+- Description: Google OAuth login/signup
+- Request:
+```json
+{
+  "idToken": "google_id_token_from_oauth"
+}
+```
+- Response (200):
+```json
+{
+  "accessToken": "jwt_token",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "profileUrl": "https://..."
+  }
+}
+```
+- Errors:
+  - 400: `idToken is required` | `Email not provided by Google`
+  - 401: `Invalid token`
+  - 500: `Authentication failed`
+
+---
+
+### [routes/note.ts] - /notes/*
+
+#### GET /notes
+- Auth: Protected (Bearer token)
+- Description: List user's notes
+- Query Params:
+  - `limit` (optional, default: 10): Number of notes
+  - `sort` (optional, default: recent_used): `recent_used` | `recent_created`
+- Response (200):
+```json
+{
+  "notes": [
+    {
+      "id": "uuid",
+      "title": "Meeting Notes",
+      "durationInSeconds": 3600,
+      "createdAt": "2025-12-25T10:00:00Z",
+      "updatedAt": "2025-12-25T11:00:00Z",
+      "lastUpdated": "2025-12-25T11:00:00Z"
+    }
+  ]
+}
+```
+
+#### GET /notes/:id
+- Auth: Protected (Bearer token)
+- Description: Get single note details
+- Path Params: `id` (note UUID)
+- Response (200):
+```json
+{
+  "note": {
+    "id": "uuid",
+    "title": "Meeting Notes",
+    "content": "{...}", // JSON string with transcript
+    "aiSummary": "Summary text",
+    "speakers": [
+      {"speaker_id": "0", "speaker_name": "참석자 1"}
+    ],
+    "durationInSeconds": 3600,
+    "isPublic": false,
+    "recordingUrl": "https://...",
+    "recordingStatus": "completed",
+    "createdAt": "2025-12-25T10:00:00Z",
+    "updatedAt": "2025-12-25T11:00:00Z",
+    "lastUpdated": "2025-12-25T11:00:00Z",
+    "authorId": "uuid",
+    "keywordPackIds": ["uuid1", "uuid2"],
+    "externalResourceIds": ["uuid1"]
+  }
+}
+```
+- Errors:
+  - 404: `Note not found`
+  - 403: `Access denied` (not owner and not public)
+
+#### PATCH /notes/:id
+- Auth: Protected (Bearer token)
+- Description: Update note title or speakers
+- Path Params: `id` (note UUID)
+- Request:
+```json
+{
+  "title": "Updated Title (optional)",
+  "speakers": [
+    {"speaker_id": "0", "speaker_name": "Custom Name"}
+  ] // optional
+}
+```
+- Response (200):
+```json
+{
+  "note": { /* full note object */ }
+}
+```
+- Errors:
+  - 404: `Note not found`
+
+#### DELETE /notes/:id
+- Auth: Protected (Bearer token)
+- Description: Delete note
+- Path Params: `id` (note UUID)
+- Response (200):
+```json
+{
+  "message": "Note deleted successfully"
+}
+```
+- Errors:
+  - 404: `Note not found`
+
+---
+
+### [routes/recording.ts] - /notes/session/* + /notes/record/*
+
+#### POST /notes/session
+- Auth: Protected (Bearer token)
+- Description: Create new recording session
+- Request:
+```json
+{
+  "title": "My Recording (optional)",
+  "languageCode": "ko (optional, default: ko)",
+  "keywordPackIds": ["uuid1", "uuid2"] // optional
+  "externalResourceIds": ["uuid1"] // optional
+}
+```
+- Response (200):
+```json
+{
+  "sessionId": "uuid",
+  "noteId": "uuid",
+  "message": "Session created. Connect to WebSocket to start recording."
+}
+```
+
+#### POST /notes/session/stop
+- Auth: Protected (Bearer token)
+- Description: Stop recording and transcribe
+- Request:
+```json
+{
+  "sessionId": "uuid"
+}
+```
+- Response (200):
+```json
+{
+  "message": "Recording completed and transcribed successfully",
+  "recordingUrl": "https://...",
+  "durationInSeconds": 3600,
+  "transcript": {
+    "text": "Original transcript",
+    "formatted": "GPT-corrected transcript",
+    "language": "ko",
+    "language_probability": 0.99,
+    "word_count": 150
+  },
+  "speakers": [
+    {
+      "speaker_id": "0",
+      "text": "Speaker text...",
+      "word_count": 75
+    }
+  ]
+}
+```
+- Errors:
+  - 400: `sessionId is required`
+  - 404: `Session not found or already stopped`
+  - 403: `Access denied`
+
+#### POST /notes/session/cancel
+- Auth: Protected (Bearer token)
+- Description: Cancel recording and delete note
+- Request:
+```json
+{
+  "sessionId": "uuid"
+}
+```
+- Response (200):
+```json
+{
+  "message": "Recording cancelled and deleted successfully",
+  "sessionId": "uuid"
+}
+```
+
+#### GET /notes/record/:noteId
+- Auth: Protected (Bearer token)
+- Description: Get recording file URL
+- Path Params: `noteId` (note UUID)
+- Response (200):
+```json
+{
+  "recordingUrl": "https://...",
+  "durationInSeconds": 3600
+}
+```
+- Errors:
+  - 404: `Note not found` | `Recording not available`
+  - 403: `Access denied`
+
+#### WebSocket: /notes/session/:sessionId
+- Auth: Bearer token (via query param `?token=` or Authorization header)
+- Description: Real-time audio recording with STT
+- Connection URL: `ws://localhost:3000/notes/session/{sessionId}?token={jwt}`
+
+**Client → Server Messages:**
+```json
+// Audio chunk
+{
+  "audio": "base64_encoded_pcm_audio"
+}
+
+// Control: Toggle keyword detection
+{
+  "action": "keyword.control",
+  "data": "on" | "off"
+}
+
+// Control: Toggle resource hints
+{
+  "action": "hints.control",
+  "data": "on" | "off"
+}
+```
+
+**Server → Client Messages:**
+```json
+// Ready to record
+{
+  "type": "ready",
+  "sessionId": "uuid",
+  "message": "Ready to record"
+}
+
+// Partial transcript (real-time)
 {
   "type": "partial",
-  "text": "안녕하세요",
-  "chunks": ["안녕하세요"]
+  "text": "partial transcription text"
 }
-```
 
-#### 2.2 Committed Transcript (확정된 텍스트)
-```json
+// Committed transcript (confirmed)
 {
   "type": "committed",
-  "text": "안녕하세요. 오늘 날씨가 좋네요.",
-  "chunks": [
-    "안녕하세요.",
-    "오늘 날씨가 좋네요."
-  ]
+  "text": "confirmed transcription text"
 }
-```
 
-#### 2.3 Formatted Transcript (GPT로 교정된 최종 텍스트)
-```json
+// GPT-formatted text
 {
   "type": "formatted",
-  "text": "안녕하세요. 오늘 날씨가 좋네요.",
-  "chunks": [
-    "안녕하세요.",
-    "오늘 날씨가 좋네요."
+  "text": "GPT corrected text"
+}
+
+// Detected keywords
+{
+  "type": "keywords",
+  "keywords": [
+    {
+      "name": "Lambda",
+      "description": "AWS serverless function service"
+    }
+  ]
+}
+
+// Resource hints
+{
+  "type": "hints",
+  "hints": [
+    {
+      "resourceId": "uuid",
+      "resourceTitle": "AWS Guide",
+      "hint": "Lambda is a serverless computing service...",
+      "sourceUrl": "https://..."
+    }
+  ]
+}
+
+// Status updates
+{
+  "type": "keyword.status",
+  "enabled": true
+}
+
+{
+  "type": "hints.status",
+  "enabled": true
+}
+
+// Errors
+{
+  "type": "error",
+  "error": "error message"
+}
+```
+
+---
+
+### [routes/keywordpack.ts] - /keywordpacks/*
+
+#### GET /keywordpacks
+- Auth: Protected (Bearer token)
+- Description: List user's keyword packs
+- Query Params: `limit` (optional, default: 50)
+- Response (200):
+```json
+{
+  "packs": [
+    {
+      "id": "uuid",
+      "name": "AWS Terms",
+      "keywords": [
+        {"name": "EC2", "description": "Virtual server instances"},
+        {"name": "S3", "description": "Object storage service"}
+      ],
+      "createdAt": "2025-12-25T10:00:00Z",
+      "updatedAt": "2025-12-25T11:00:00Z",
+      "isPublic": false,
+      "previewImageUrl": "https://..."
+    }
   ]
 }
 ```
 
----
+#### GET /keywordpacks/:id
+- Auth: Protected (Bearer token)
+- Description: Get single keyword pack
+- Path Params: `id` (pack UUID)
+- Response (200):
+```json
+{
+  "pack": { /* full pack object */ }
+}
+```
+- Errors:
+  - 404: `Keyword pack not found`
+  - 403: `Access denied`
 
-## Android Kotlin Implementation Example
+#### POST /keywordpacks
+- Auth: Protected (Bearer token)
+- Description: Create new keyword pack
+- Request:
+```json
+{
+  "name": "My Keywords",
+  "keywords": [
+    {"name": "Term", "description": "Definition"}
+  ], // optional, default: []
+  "isPublic": false // optional
+}
+```
+- Response (200):
+```json
+{
+  "pack": { /* created pack */ }
+}
+```
+- Errors:
+  - 400: `Name is required`
 
-### Dependencies (build.gradle.kts)
-```kotlin
-dependencies {
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.google.code.gson:gson:2.10.1")
+#### POST /keywordpacks/:id/keywords
+- Auth: Protected (Bearer token)
+- Description: Add keyword to pack
+- Path Params: `id` (pack UUID)
+- Request:
+```json
+{
+  "name": "Lambda",
+  "description": "AWS serverless function"
+}
+```
+- Response (200):
+```json
+{
+  "pack": { /* updated pack */ }
+}
+```
+- Errors:
+  - 400: `Keyword name is required`
+  - 404: `Keyword pack not found`
+
+#### PATCH /keywordpacks/:id
+- Auth: Protected (Bearer token)
+- Description: Update keyword pack
+- Path Params: `id` (pack UUID)
+- Request:
+```json
+{
+  "name": "Updated Name (optional)",
+  "keywords": [...], // optional, full replacement
+  "isPublic": true, // optional
+  "previewImageUrl": "https://..." // optional
+}
+```
+- Response (200):
+```json
+{
+  "pack": { /* updated pack */ }
 }
 ```
 
-### Permission (AndroidManifest.xml)
-```xml
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
-<uses-permission android:name="android.permission.INTERNET" />
-```
-
-### Data Classes
-```kotlin
-import com.google.gson.annotations.SerializedName
-
-data class AudioMessage(
-    val audio: String
-)
-
-data class TranscriptMessage(
-    val type: String,
-    val text: String,
-    val chunks: List<String>
-)
-```
-
-### WebSocket Manager
-```kotlin
-import android.media.AudioFormat
-import android.media.AudioRecord
-import android.media.MediaRecorder
-import android.util.Base64
-import android.util.Log
-import com.google.gson.Gson
-import okhttp3.*
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-
-class SttWebSocketManager(
-    private val serverUrl: String,
-    private val onTranscript: (TranscriptMessage) -> Unit
-) {
-    private var webSocket: WebSocket? = null
-    private var audioRecord: AudioRecord? = null
-    private val client = OkHttpClient()
-    private val gson = Gson()
-    
-    companion object {
-        private const val SAMPLE_RATE = 16000
-        private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
-        private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-        private const val TAG = "SttWebSocket"
-    }
-    
-    fun connect() {
-        val request = Request.Builder()
-            .url(serverUrl)
-            .build()
-        
-        webSocket = client.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.d(TAG, "WebSocket 연결됨")
-                startRecording()
-            }
-            
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                try {
-                    val message = gson.fromJson(text, TranscriptMessage::class.java)
-                    onTranscript(message)
-                    
-                    when (message.type) {
-                        "partial" -> Log.d(TAG, "📝 [PARTIAL] ${message.text}")
-                        "committed" -> Log.d(TAG, "✅ [COMMITTED] ${message.text}")
-                        "formatted" -> Log.d(TAG, "✨ [FORMATTED] ${message.text}")
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "메시지 파싱 오류", e)
-                }
-            }
-            
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.e(TAG, "WebSocket 오류", t)
-                stopRecording()
-            }
-            
-            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                Log.d(TAG, "WebSocket 종료 중: $reason")
-                stopRecording()
-            }
-        })
-    }
-    
-    private fun startRecording() {
-        val bufferSize = AudioRecord.getMinBufferSize(
-            SAMPLE_RATE,
-            CHANNEL_CONFIG,
-            AUDIO_FORMAT
-        )
-        
-        audioRecord = AudioRecord(
-            MediaRecorder.AudioSource.MIC,
-            SAMPLE_RATE,
-            CHANNEL_CONFIG,
-            AUDIO_FORMAT,
-            bufferSize
-        )
-        
-        audioRecord?.startRecording()
-        
-        Thread {
-            val buffer = ShortArray(bufferSize / 2)
-            
-            while (audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
-                val readSize = audioRecord?.read(buffer, 0, buffer.size) ?: 0
-                
-                if (readSize > 0) {
-                    // Short array를 byte array로 변환
-                    val byteBuffer = ByteBuffer.allocate(readSize * 2)
-                    byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
-                    
-                    for (i in 0 until readSize) {
-                        byteBuffer.putShort(buffer[i])
-                    }
-                    
-                    val audioBytes = byteBuffer.array()
-                    val base64Audio = Base64.encodeToString(audioBytes, Base64.NO_WRAP)
-                    
-                    // 서버로 전송
-                    val message = AudioMessage(audio = base64Audio)
-                    val json = gson.toJson(message)
-                    webSocket?.send(json)
-                }
-            }
-        }.start()
-    }
-    
-    private fun stopRecording() {
-        audioRecord?.apply {
-            if (recordingState == AudioRecord.RECORDSTATE_RECORDING) {
-                stop()
-            }
-            release()
-        }
-        audioRecord = null
-    }
-    
-    fun disconnect() {
-        stopRecording()
-        webSocket?.close(1000, "Client closed")
-        webSocket = null
-    }
+#### DELETE /keywordpacks/:id
+- Auth: Protected (Bearer token)
+- Description: Delete keyword pack
+- Response (200):
+```json
+{
+  "message": "Keyword pack deleted successfully"
 }
 ```
 
-### Usage Example (Activity/Fragment)
-```kotlin
-class MainActivity : AppCompatActivity() {
-    private lateinit var sttManager: SttWebSocketManager
-    
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        
-        // WebSocket 초기화
-        sttManager = SttWebSocketManager(
-            serverUrl = "ws://your-server:3000/stt",
-            onTranscript = { message ->
-                runOnUiThread {
-                    when (message.type) {
-                        "partial" -> {
-                            // 실시간 중간 결과 표시 (회색으로 표시)
-                            updatePartialText(message.text)
-                        }
-                        "committed" -> {
-                            // 확정된 텍스트 표시 (검은색으로 확정)
-                            updateCommittedText(message.text)
-                        }
-                        "formatted" -> {
-                            // GPT로 교정된 최종 텍스트 (교정 완료 마크)
-                            updateFormattedText(message.text)
-                        }
-                    }
-                }
-            }
-        )
-        
-        // 권한 확인 후 연결
-        if (checkPermissions()) {
-            sttManager.connect()
-        }
-    }
-    
-    private fun updatePartialText(text: String) {
-        // 임시 텍스트 표시 로직
-        binding.tvPartial.text = text
-        binding.tvPartial.setTextColor(Color.GRAY)
-    }
-    
-    private fun updateCommittedText(text: String) {
-        // 확정 텍스트 표시 로직
-        binding.tvCommitted.text = text
-        binding.tvCommitted.setTextColor(Color.BLACK)
-    }
-    
-    private fun updateFormattedText(text: String) {
-        // 최종 교정 텍스트 표시 로직
-        binding.tvFormatted.text = text
-        binding.tvFormatted.setTextColor(Color.BLUE)
-    }
-    
-    private fun checkPermissions(): Boolean {
-        return if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.RECORD_AUDIO),
-                100
-            )
-            false
-        } else {
-            true
-        }
-    }
-    
-    override fun onDestroy() {
-        super.onDestroy()
-        sttManager.disconnect()
-    }
+#### POST /keywordpacks/ai/autocomplete
+- Auth: Protected (Bearer token)
+- Description: AI suggests 5 descriptions for a keyword
+- Request:
+```json
+{
+  "name": "Lambda"
 }
 ```
+- Response (200):
+```json
+{
+  "suggestions": [
+    "AWS의 서버리스 컴퓨팅 서비스입니다.",
+    "이벤트 기반으로 코드를 실행하는 함수형 서비스입니다.",
+    "서버 관리 없이 코드를 실행할 수 있는 서비스입니다.",
+    "자동으로 확장되는 컴퓨팅 리소스를 제공합니다.",
+    "사용한 컴퓨팅 시간만큼만 비용을 지불하는 서비스입니다."
+  ]
+}
+```
+- Errors:
+  - 400: `Keyword name is required`
+  - 500: `Failed to generate suggestions`
+
+#### POST /keywordpacks/ai/autofill
+- Auth: Protected (Bearer token)
+- Description: AI generates keywords from Perplexity search
+- Request:
+```json
+{
+  "query": "AWS 관련 단어 다 찾아줘",
+  "count": 50 // optional, default: 50
+}
+```
+- Response (200):
+```json
+{
+  "keywords": [
+    {"name": "EC2", "description": "가상 서버 인스턴스 서비스"},
+    {"name": "S3", "description": "객체 스토리지 서비스"},
+    // ... up to 'count' keywords
+  ]
+}
+```
+- Errors:
+  - 400: `Query is required`
+  - 500: `Failed to generate keywords`
 
 ---
 
-## UI Recommendation
+### [routes/externalresource.ts] - /externalresources/*
 
-### 3단계 텍스트 표시 추천
+#### GET /externalresources
+- Auth: Protected (Bearer token)
+- Description: List user's external resources
+- Query Params: `limit` (optional, default: 50)
+- Response (200):
+```json
+{
+  "resources": [
+    {
+      "id": "uuid",
+      "url": "https://docs.aws.amazon.com/lambda/",
+      "displayUrl": "https://docs.aws.amazon.com/lambda",
+      "title": "AWS Lambda",
+      "logoUrl": "https://...",
+      "createdAt": "2025-12-25T10:00:00Z",
+      "updatedAt": "2025-12-25T11:00:00Z"
+    }
+  ]
+}
+```
 
-1. **Partial (회색)**: 실시간으로 변하는 임시 텍스트
-   - 사용자에게 "지금 인식 중" 피드백
+#### GET /externalresources/:id
+- Auth: Protected (Bearer token)
+- Description: Get single external resource (includes scraped content)
+- Path Params: `id` (resource UUID)
+- Response (200):
+```json
+{
+  "resource": {
+    "id": "uuid",
+    "url": "https://...",
+    "displayUrl": "https://...",
+    "title": "AWS Guide",
+    "logoUrl": "https://...",
+    "scrapedContent": "Full markdown content from Firecrawl...",
+    "metadata": { /* OG tags, etc */ },
+    "createdAt": "2025-12-25T10:00:00Z",
+    "updatedAt": "2025-12-25T11:00:00Z",
+    "authorId": "uuid"
+  }
+}
+```
+- Errors:
+  - 404: `External resource not found`
+  - 403: `Access denied`
+
+#### POST /externalresources
+- Auth: Protected (Bearer token)
+- Description: Create external resource by scraping URL (Firecrawl + GPT title generation)
+- Request:
+```json
+{
+  "url": "https://docs.aws.amazon.com/lambda/"
+}
+```
+- Response (200):
+```json
+{
+  "resource": {
+    "id": "uuid",
+    "url": "https://docs.aws.amazon.com/lambda/",
+    "displayUrl": "https://docs.aws.amazon.com/lambda",
+    "title": "AWS Lambda", // auto-generated (max 10 chars)
+    "logoUrl": "https://...",
+    "scrapedContent": "Full markdown...",
+    "metadata": {},
+    "createdAt": "2025-12-25T10:00:00Z",
+    "updatedAt": "2025-12-25T11:00:00Z",
+    "authorId": "uuid"
+  }
+}
+```
+- Errors:
+  - 400: `URL is required`
+  - 500: `Failed to scrape URL`
+
+#### PATCH /externalresources/:id
+- Auth: Protected (Bearer token)
+- Description: Update external resource title (max 10 chars)
+- Path Params: `id` (resource UUID)
+- Request:
+```json
+{
+  "title": "Lambda Doc"
+}
+```
+- Response (200):
+```json
+{
+  "resource": { /* updated resource */ }
+}
+```
+- Errors:
+  - 400: `Title is required` | `Title must be 10 characters or less`
+  - 404: `External resource not found`
+
+#### DELETE /externalresources/:id
+- Auth: Protected (Bearer token)
+- Description: Delete external resource
+- Response (200):
+```json
+{
+  "message": "External resource deleted successfully"
+}
+```
+
+---
+
+### [routes/stt.ts] - /ws/stt/*
+
+#### WebSocket: /ws/stt
+- Auth: None (standalone STT without recording)
+- Description: Real-time speech-to-text only
+- Connection URL: `ws://localhost:3000/ws/stt`
+
+**Client → Server:**
+```json
+{
+  "audio": "base64_encoded_pcm_16000hz"
+}
+```
+
+**Server → Client:**
+```json
+// Partial transcript
+{
+  "type": "partial",
+  "text": "real-time text",
+  "chunks": ["line1", "line2"] // for Android display
+}
+
+// Committed transcript
+{
+  "type": "committed",
+  "text": "confirmed text",
+  "chunks": ["line1", "line2"]
+}
+
+// GPT formatted
+{
+  "type": "formatted",
+  "text": "corrected text",
+  "chunks": ["line1", "line2"]
+}
+```
+
+---
+
+### [Main App] - /*
+
+#### GET /
+- Auth: Public
+- Response (200):
+```json
+{
+  "message": "Clari API Server"
+}
+```
+
+#### GET /me
+- Auth: Protected (Bearer token)
+- Description: Get current user info
+- Response (200):
+```json
+{
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "profileUrl": "https://..."
+  }
+}
+```
+- Errors:
+  - 404: `User not found`
+
+---
+
+## 6. Business Flows
+
+### Authentication Flow
+```
+1. User initiates Google OAuth (frontend)
+2. Frontend gets idToken from Google
+3. POST /auth/google with idToken
+4. Backend verifies token, creates/updates user
+5. Backend returns JWT accessToken
+6. Client stores accessToken
+7. Use accessToken in Authorization header for all protected routes
+```
+
+### Recording Session Flow
+```
+1. Create session: POST /notes/session
+   → Returns sessionId
    
-2. **Committed (검은색)**: 확정된 텍스트
-   - 음성 구간이 끝나서 확정된 상태
+2. Connect WebSocket: ws://.../notes/session/:sessionId?token=jwt
+   → Receive "ready" message
    
-3. **Formatted (파란색/굵게)**: GPT로 교정 완료
-   - 최종 결과물, 맞춤법/띄어쓰기 교정 완료
+3. Send audio chunks: {"audio": "base64..."}
+   → Receive real-time transcripts (partial, committed, formatted)
+   → Receive keyword detections (if keywordPackIds provided)
+   → Receive resource hints (if externalResourceIds provided)
+   
+4. Toggle features during recording:
+   - {"action": "keyword.control", "data": "off"}
+   - {"action": "hints.control", "data": "on"}
+   
+5. Stop recording: POST /notes/session/stop
+   → Returns full transcript, speakers, recording URL
+   
+6. Or cancel: POST /notes/session/cancel
+   → Deletes note immediately
+```
+
+### Note Management Flow
+```
+1. List notes: GET /notes?limit=20&sort=recent_used
+2. View details: GET /notes/:id
+3. Update: PATCH /notes/:id (title, speakers)
+4. Delete: DELETE /notes/:id
+```
+
+### Keyword Pack Flow
+```
+1. Create pack: POST /keywordpacks {"name": "AWS Terms"}
+2. Add keywords manually: POST /keywordpacks/:id/keywords
+3. OR use AI autocomplete:
+   - POST /keywordpacks/ai/autocomplete {"name": "Lambda"}
+   - Select from 5 suggestions
+   - Add to pack
+4. OR use AI autofill:
+   - POST /keywordpacks/ai/autofill {"query": "AWS terms", "count": 50}
+   - Get 50 keywords at once
+   - PATCH /keywordpacks/:id with full keywords array
+5. Use in recording: POST /notes/session {"keywordPackIds": ["uuid1", "uuid2"]}
+```
+
+### External Resource Flow
+```
+1. Scrape website: POST /externalresources {"url": "https://..."}
+   → Firecrawl scrapes content
+   → GPT generates 10-char title
+   → Returns resource with scraped content
+2. List resources: GET /externalresources
+3. Update title: PATCH /externalresources/:id {"title": "New Title"}
+4. Use in recording: POST /notes/session {"externalResourceIds": ["uuid1"]}
+   → During recording, hints appear when related words detected
+5. Delete: DELETE /externalresources/:id
+```
 
 ---
 
-## Testing
+## 7. WebSocket Audio Format
 
-### 1. 서버 실행
+### For Recording & STT WebSockets
+- Format: PCM (Raw audio)
+- Sample Rate: 16000 Hz
+- Encoding: Signed 16-bit
+- Channels: Mono (1)
+- Transmission: Base64-encoded JSON
+
+**Client Audio Capture:**
+```
+Record audio → Convert to PCM 16kHz mono → Base64 encode → Send as JSON
+```
+
+**Example (pseudo-code):**
+```kotlin
+// Android MediaRecorder setup
+val audioFormat = AudioFormat.Builder()
+    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+    .setSampleRate(16000)
+    .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
+    .build()
+
+// Send chunks
+val base64Audio = Base64.encodeToString(audioBytes, Base64.NO_WRAP)
+websocket.send("""{"audio":"$base64Audio"}""")
+```
+
+---
+
+## 8. Error Codes Summary
+
+| Code | Meaning | Example |
+|------|---------|---------|
+| 400 | Bad Request | Missing required field, invalid format |
+| 401 | Unauthorized | Invalid/expired JWT token |
+| 403 | Forbidden | Accessing other user's resource |
+| 404 | Not Found | Resource doesn't exist |
+| 500 | Server Error | Database error, external API failure |
+
+---
+
+## 9. Environment Variables Required
+
 ```bash
-bun run dev
-```
+# Database
+DATABASE_URL="postgresql://..."
 
-### 2. Android 앱 실행
-- 권한 허용
-- WebSocket 연결
-- 마이크 녹음 시작
-- 말하기 시작 → 실시간 텍스트 확인
+# Auth
+GOOGLE_CLIENT_ID="..."
+JWT_SECRET="..."
 
----
+# AI Services
+AZURE_ENDPOINT="https://..."
+AZURE_API_KEY="..."
+AZURE_API_VERSION="2024-12-01-preview"
+AZURE_DEPLOYMENT_NAME="gpt-4.1-mini"
+PERPLEXITY_API_KEY="..."
+FIRECRAWL_API_KEY="..."
 
-## Troubleshooting
+# Speech Services
+ELEVENLABS_API_KEY="..."
 
-### 1. 연결 안됨
-- 서버 URL 확인: `ws://` (not `wss://` for local)
-- 서버가 실행 중인지 확인
-- 방화벽 확인
-
-### 2. 오디오가 전송되지 않음
-- 마이크 권한 확인
-- Sample Rate 16000Hz 확인
-- Base64 인코딩 확인
-
-### 3. 텍스트가 표시되지 않음
-- 서버 로그 확인 (`console.log` 출력)
-- WebSocket 메시지 로그 확인
-- JSON 파싱 오류 확인
-
----
-
-## Server Logs
-서버에서 다음과 같은 로그가 출력됩니다:
-
-```
-WebSocket 연결됨
-🔗 ElevenLabs STT 연결 완료, 오디오 대기 중...
-
-🟢 AUDIO 
-📝 [PARTIAL] 안녕하세요
-✅ [COMMITTED] 안녕하세요.
-✨ [FORMATTED] 안녕하세요.
+# Storage (Cloudflare R2)
+R2_ACCOUNT_ID="..."
+R2_ACCESS_KEY_ID="..."
+R2_SECRET_ACCESS_KEY="..."
+R2_BUCKET_NAME="..."
 ```
 
 ---
 
-## Notes
+## 10. Notes for Android Integration
 
-- **Chunks**: 긴 텍스트를 화면에 맞게 나눈 배열 (최대 3줄, 각 줄 40자)
-- **Latency**: 
-  - Partial: 실시간 (~100ms)
-  - Committed: 음성 끝난 후 즉시
-  - Formatted: Committed 후 GPT 처리 (~1-2초)
+### Retrofit Setup
+- Base URL: `http://10.0.2.2:3000` (Android emulator) or actual server URL
+- Add Authorization interceptor for Bearer token
+- Use OkHttp for WebSocket connections
+
+### WebSocket Libraries
+- Use OkHttp WebSocket for recording sessions
+- Handle JSON serialization with Gson/Moshi
+- Manage connection state (ready, recording, closed)
+
+### Audio Recording
+- Use MediaRecorder or AudioRecord
+- PCM format: 16000 Hz, 16-bit, mono
+- Chunk size: 1024-4096 bytes recommended
+- Base64 encode before sending
+
+### State Management
+- Store JWT token securely (EncryptedSharedPreferences)
+- Handle session lifecycle (create → connect → record → stop)
+- Display real-time transcripts using LiveData/Flow
+- Show keyword/hint cards as they arrive
+
+### Recommended Architecture
+```
+UI Layer (Compose/Views)
+  ↓
+ViewModel (State management)
+  ↓
+Repository (API + WebSocket)
+  ↓
+Data Layer (Retrofit + OkHttp)
+```
+
+---
+
+END OF SPECIFICATION

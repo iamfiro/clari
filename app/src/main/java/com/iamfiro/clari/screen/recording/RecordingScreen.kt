@@ -28,36 +28,53 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.iamfiro.clari.core.Repository.NoteRepository
-import com.iamfiro.clari.core.service.ConnectionState
+import com.iamfiro.clari.core.repository.RecordingRepository
+import com.iamfiro.clari.core.service.SessionConnectionState
 import com.iamfiro.clari.core.ui.LocalNavBackStack
+import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.component.ConfirmBottomSheet
 import com.iamfiro.clari.feature.note.component.RecordingControl
 import com.iamfiro.clari.feature.note.component.RecordingHeader
 import com.iamfiro.clari.feature.note.component.TranscribeContainer
+import com.iamfiro.clari.feature.note.component.WordCardOverlay
 import kotlinx.coroutines.launch
 
 private const val TAG = "RecordingScreen"
 
 @Composable
-fun RecordingScreen(projectId: String, languageCode: String) {
+fun RecordingScreen(
+    projectId: String,
+    languageCode: String,
+    keywordPackIds: List<String> = emptyList(),
+    externalResourceIds: List<String> = emptyList()
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val noteRepository = remember { NoteRepository() }
+    val recordingRepository = remember { RecordingRepository.getInstance() }
     val backStack = LocalNavBackStack.current
     
     var showConfirmBottomSheet by remember { mutableStateOf(false) }
+    var showCancelBottomSheet by remember { mutableStateOf(false) }
 
     val viewModel: RecordingViewModel = viewModel(
-        factory = RecordingViewModelFactory(context.applicationContext, noteRepository, languageCode)
+        factory = RecordingViewModelFactory(
+            context.applicationContext,
+            recordingRepository,
+            languageCode,
+            keywordPackIds,
+            externalResourceIds
+        )
     )
 
     val isRecording by viewModel.isRecording.collectAsState()
+    val isCreatingSession by viewModel.isCreatingSession.collectAsState()
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
     val partialText by viewModel.partialText.collectAsState()
     val transcriptItems by viewModel.transcriptItems.collectAsState()
+    val detectedKeywords by viewModel.detectedKeywords.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     var hasPermission by remember {
         val granted = ContextCompat.checkSelfPermission(
@@ -71,51 +88,52 @@ fun RecordingScreen(projectId: String, languageCode: String) {
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        Log.d(TAG, "========== 권한 요청 결과 ==========")
-        Log.d(TAG, "권한 승인: $isGranted")
+        Log.d(TAG, "권한 요청 결과: $isGranted")
         hasPermission = isGranted
         if (isGranted) {
-            Log.d(TAG, "권한 승인됨 - 녹음 시작")
             viewModel.startRecording()
         } else {
-            Log.w(TAG, "권한 거부됨")
             scope.launch {
                 snackbarHostState.showSnackbar("마이크 권한이 필요합니다")
             }
         }
     }
 
+    // 화면 진입 시 자동 녹음 시작
     LaunchedEffect(Unit) {
         Log.d(TAG, "========== 화면 진입 - 자동 시작 ==========")
-        Log.d(TAG, "현재 권한 상태: $hasPermission")
-        
         if (!hasPermission) {
-            Log.d(TAG, "권한 없음 - 권한 요청 시작")
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         } else {
-            Log.d(TAG, "권한 있음 - 녹음 바로 시작")
             viewModel.startRecording()
         }
     }
 
+    // 에러 처리
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+    }
+
+    // 연결 상태 변경 처리
     LaunchedEffect(connectionState) {
         Log.d(TAG, "연결 상태 변경: $connectionState")
         when (connectionState) {
-            is ConnectionState.Error -> {
-                val errorMsg = (connectionState as ConnectionState.Error).message
-                Log.e(TAG, "연결 오류: $errorMsg")
+            is SessionConnectionState.Error -> {
+                val errorMsg = (connectionState as SessionConnectionState.Error).message
                 snackbarHostState.showSnackbar("연결 오류: $errorMsg")
             }
             else -> {}
         }
     }
 
+    // 화면 종료 시 정리
     DisposableEffect(Unit) {
         onDispose {
             Log.d(TAG, "========== 화면 종료 ==========")
             if (isRecording) {
-                Log.d(TAG, "녹음 중지")
-                viewModel.stopRecording()
+                viewModel.cancelRecording()
             }
         }
     }
@@ -124,61 +142,110 @@ fun RecordingScreen(projectId: String, languageCode: String) {
         modifier = Modifier.background(MaterialTheme.colorScheme.surface),
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        Column(
-            verticalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            RecordingHeader(
-                onBackClick = {
-                    showConfirmBottomSheet = true
-                },
-                onExitClick = {
-                    showConfirmBottomSheet = true
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                verticalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                RecordingHeader(
+                    onBackClick = {
+                        showCancelBottomSheet = true
+                    },
+                    onExitClick = {
+                        showConfirmBottomSheet = true
+                    }
+                )
+                Box(modifier = Modifier.weight(1f)) {
+                    TranscribeContainer(
+                        transcriptItems = transcriptItems.map { 
+                            com.iamfiro.clari.core.service.model.TranscriptItem(
+                                id = it.id,
+                                committedText = it.text,
+                                committedChunks = listOf(it.text),
+                                formattedText = if (it.isFormatted) it.text else null,
+                                formattedChunks = if (it.isFormatted) listOf(it.text) else null,
+                                isFormatted = it.isFormatted
+                            )
+                        },
+                        partialText = partialText?.let {
+                            com.iamfiro.clari.core.service.model.SttResponse(
+                                type = "partial",
+                                text = it,
+                                chunks = listOf(it)
+                            )
+                        }
+                    )
                 }
-            )
-            Box(modifier = Modifier.weight(1f)) {
-                TranscribeContainer(
-                    transcriptItems = transcriptItems,
-                    partialText = partialText
+                RecordingControl(
+                    isRecording = isRecording,
+                    elapsedTime = viewModel.formatElapsedTime(elapsedSeconds),
+                    connectionState = when (connectionState) {
+                        is SessionConnectionState.Connected, 
+                        is SessionConnectionState.Ready -> com.iamfiro.clari.core.service.ConnectionState.Connected
+                        is SessionConnectionState.Connecting -> com.iamfiro.clari.core.service.ConnectionState.Connecting
+                        is SessionConnectionState.Error -> com.iamfiro.clari.core.service.ConnectionState.Error((connectionState as SessionConnectionState.Error).message)
+                        else -> com.iamfiro.clari.core.service.ConnectionState.Disconnected
+                    },
+                    isLoading = isCreatingSession,
+                    onToggleRecording = {
+                        Log.d(TAG, "녹음 버튼 클릭")
+                        if (!hasPermission) {
+                            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        } else {
+                            viewModel.toggleRecording()
+                        }
+                    }
                 )
             }
-            RecordingControl(
-                isRecording = isRecording,
-                elapsedTime = viewModel.formatElapsedTime(elapsedSeconds),
-                connectionState = connectionState,
-                onToggleRecording = {
-                    Log.d(TAG, "========== 녹음 버튼 클릭 ==========")
-                    Log.d(TAG, "현재 녹음 상태: $isRecording")
-                    Log.d(TAG, "권한 상태: $hasPermission")
-                    
-                    if (!hasPermission) {
-                        Log.d(TAG, "권한 요청 시작")
-                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                    } else {
-                        Log.d(TAG, "녹음 토글")
-                        viewModel.toggleRecording()
-                    }
-                }
-            )
+
+            // 키워드 오버레이
+            if (detectedKeywords.isNotEmpty()) {
+                WordCardOverlay(
+                    keywords = detectedKeywords,
+                    onDismiss = { /* auto dismiss */ }
+                )
+            }
         }
         
+        // 녹음 완료 확인
         ConfirmBottomSheet(
             visible = showConfirmBottomSheet,
             onDismiss = { showConfirmBottomSheet = false },
-            title = "녹음을 종료하시겠어요?",
+            title = "녹음을 저장하시겠어요?",
             message = "지금까지 녹음한 내용이 저장됩니다.",
-            confirmText = "종료하기",
+            confirmText = "저장하기",
             cancelText = "취소",
             onConfirm = {
-                if (isRecording) {
-                    viewModel.stopRecording()
+                viewModel.stopRecording { noteId ->
+                    if (noteId != null) {
+                        backStack.removeLastOrNull()
+                        backStack.add(Screen.NoteDetail(noteId))
+                    } else {
+                        backStack.removeLastOrNull()
+                    }
                 }
-                backStack.removeLastOrNull()
             },
             onCancel = {
                 showConfirmBottomSheet = false
+            }
+        )
+
+        // 녹음 취소 확인
+        ConfirmBottomSheet(
+            visible = showCancelBottomSheet,
+            onDismiss = { showCancelBottomSheet = false },
+            title = "녹음을 취소하시겠어요?",
+            message = "녹음한 내용이 모두 삭제됩니다.",
+            confirmText = "취소하기",
+            cancelText = "돌아가기",
+            onConfirm = {
+                viewModel.cancelRecording()
+                backStack.removeLastOrNull()
+            },
+            onCancel = {
+                showCancelBottomSheet = false
             }
         )
     }

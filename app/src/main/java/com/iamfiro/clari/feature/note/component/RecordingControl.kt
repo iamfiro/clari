@@ -38,9 +38,10 @@ fun RecordingControl(
     isRecording: Boolean = false,
     elapsedTime: String = "00:00",
     connectionState: ConnectionState = ConnectionState.Disconnected,
+    isLoading: Boolean = false,
     onToggleRecording: () -> Unit = {}
 ) {
-    Log.d(TAG, "RecordingControl 렌더링 - isRecording: $isRecording, connectionState: $connectionState")
+    Log.d(TAG, "RecordingControl 렌더링 - isRecording: $isRecording, connectionState: $connectionState, isLoading: $isLoading")
     
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -63,7 +64,7 @@ fun RecordingControl(
             )
             
             // 연결 상태 표시
-            ConnectionStatusIndicator(connectionState)
+            ConnectionStatusIndicator(connectionState, isLoading)
         }
 
         // 녹음 버튼
@@ -85,14 +86,14 @@ fun RecordingControl(
                     },
                     shape = RoundedCornerShape(999.dp)
                 )
-                .clickable {
+                .clickable(enabled = !isLoading) {
                     Log.d(TAG, "========== 버튼 클릭됨! ==========")
                     onToggleRecording()
                 },
             contentAlignment = Alignment.Center
         ) {
-            when (connectionState) {
-                is ConnectionState.Connecting -> {
+            when {
+                isLoading || connectionState is ConnectionState.Connecting -> {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         strokeWidth = 2.dp
@@ -119,12 +120,14 @@ fun RecordingControl(
 }
 
 @Composable
-private fun ConnectionStatusIndicator(connectionState: ConnectionState) {
-    val (text, color) = when (connectionState) {
-        is ConnectionState.Disconnected -> "연결 대기" to MaterialTheme.colorScheme.onSurfaceVariant
-        is ConnectionState.Connecting -> "연결 중..." to MaterialTheme.colorScheme.primary
-        is ConnectionState.Connected -> "연결됨" to Color(0xFF4CAF50)
-        is ConnectionState.Error -> "연결 오류" to MaterialTheme.colorScheme.error
+private fun ConnectionStatusIndicator(connectionState: ConnectionState, isLoading: Boolean) {
+    val (text, color) = when {
+        isLoading -> "세션 생성 중..." to MaterialTheme.colorScheme.primary
+        connectionState is ConnectionState.Disconnected -> "연결 대기" to MaterialTheme.colorScheme.onSurfaceVariant
+        connectionState is ConnectionState.Connecting -> "연결 중..." to MaterialTheme.colorScheme.primary
+        connectionState is ConnectionState.Connected -> "연결됨" to Color(0xFF4CAF50)
+        connectionState is ConnectionState.Error -> "연결 오류" to MaterialTheme.colorScheme.error
+        else -> "연결 대기" to MaterialTheme.colorScheme.onSurfaceVariant
     }
     
     Text(

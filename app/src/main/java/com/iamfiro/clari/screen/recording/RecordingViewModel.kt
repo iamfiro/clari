@@ -5,135 +5,151 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.iamfiro.clari.core.Repository.NoteRepository
+import com.iamfiro.clari.core.network.ApiClient
+import com.iamfiro.clari.core.repository.RecordingRepository
 import com.iamfiro.clari.core.service.AudioRecorderService
-import com.iamfiro.clari.core.service.ConnectionState
+import com.iamfiro.clari.core.service.KeywordHit
+import com.iamfiro.clari.core.service.RecordingSessionService
 import com.iamfiro.clari.core.service.RecordingState
-import com.iamfiro.clari.core.service.WebSocketService
-import com.iamfiro.clari.core.service.model.SttResponse
-import com.iamfiro.clari.core.service.model.TranscriptItem
-import com.iamfiro.clari.feature.note.model.Note
-import com.iamfiro.clari.feature.note.model.NoteType
+import com.iamfiro.clari.core.service.ResourceHint
+import com.iamfiro.clari.core.service.SessionConnectionState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.util.UUID
 
 class RecordingViewModel(
     context: Context,
-    private val noteRepository: NoteRepository,
-    private val languageCode: String = "ko-KR"
+    private val recordingRepository: RecordingRepository,
+    private val languageCode: String = "ko",
+    private val keywordPackIds: List<String> = emptyList(),
+    private val externalResourceIds: List<String> = emptyList()
 ) : ViewModel() {
     
     companion object {
         private const val TAG = "RecordingViewModel"
     }
     
-    private val webSocketService = WebSocketService()
+    private val recordingSessionService = RecordingSessionService(ApiClient.getTokenManager())
     private val audioRecorderService = AudioRecorderService(context)
 
-    val connectionState: StateFlow<ConnectionState> = webSocketService.connectionState
+    // 연결 상태
+    val connectionState: StateFlow<SessionConnectionState> = recordingSessionService.connectionState
 
+    // 녹음 상태
     val recordingState = audioRecorderService.recordingState
 
-    // 현재 실시간 인식 텍스트 (partial)
-    val partialText: StateFlow<SttResponse?> = webSocketService.partialText
+    // 세션 정보
+    private val _sessionId = MutableStateFlow<String?>(null)
+    val sessionId: StateFlow<String?> = _sessionId.asStateFlow()
 
-    // 확정된 텍스트 목록 (committed + formatted)
+    private val _noteId = MutableStateFlow<String?>(null)
+    val noteId: StateFlow<String?> = _noteId.asStateFlow()
+
+    // 실시간 텍스트
+    val partialText: StateFlow<String?> = recordingSessionService.partialText
+
+    // 확정된 텍스트 목록
     private val _transcriptItems = MutableStateFlow<List<TranscriptItem>>(emptyList())
     val transcriptItems: StateFlow<List<TranscriptItem>> = _transcriptItems.asStateFlow()
+
+    // 키워드 탐지
+    private val _detectedKeywords = MutableStateFlow<List<KeywordHit>>(emptyList())
+    val detectedKeywords: StateFlow<List<KeywordHit>> = _detectedKeywords.asStateFlow()
+
+    // 리소스 힌트
+    private val _resourceHints = MutableStateFlow<List<ResourceHint>>(emptyList())
+    val resourceHints: StateFlow<List<ResourceHint>> = _resourceHints.asStateFlow()
 
     // 녹음 진행 중 여부
     private val _isRecording = MutableStateFlow(false)
     val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
 
+    // 세션 생성 중
+    private val _isCreatingSession = MutableStateFlow(false)
+    val isCreatingSession: StateFlow<Boolean> = _isCreatingSession.asStateFlow()
+
     // 경과 시간 (초)
     private val _elapsedSeconds = MutableStateFlow(0L)
     val elapsedSeconds: StateFlow<Long> = _elapsedSeconds.asStateFlow()
+
+    // 에러
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
     
     private var timerJob: Job? = null
-
-    private var audioChunksSent = 0
-
     private var itemIdCounter = 0
-    
+
     init {
         Log.d(TAG, "========== RecordingViewModel 초기화 ==========")
+        Log.d(TAG, "Language: $languageCode")
+        Log.d(TAG, "KeywordPacks: $keywordPackIds")
+        Log.d(TAG, "ExternalResources: $externalResourceIds")
 
+        // 오디오 청크 전송
         viewModelScope.launch {
-            Log.d(TAG, "오디오 청크 수집 시작")
             audioRecorderService.audioChunks.collect { base64Audio ->
-                audioChunksSent++
-                if (audioChunksSent % 50 == 1) {
-                    Log.d(TAG, "오디오 청크 전송 #$audioChunksSent (길이: ${base64Audio.length})")
-                }
-                webSocketService.sendAudio(base64Audio)
+                recordingSessionService.sendAudio(base64Audio)
             }
         }
 
+        // Committed 텍스트 수집
         viewModelScope.launch {
-            Log.d(TAG, "Committed 텍스트 수집 시작")
-            webSocketService.committedTexts.collect { response ->
-                Log.d(TAG, "========== Committed 텍스트 수신 ==========")
-                Log.d(TAG, "Text: ${response.text}")
-                Log.d(TAG, "Chunks: ${response.chunks}")
-
+            recordingSessionService.committedTexts.collect { text ->
+                Log.d(TAG, "Committed: $text")
                 val newItem = TranscriptItem(
                     id = itemIdCounter++,
-                    committedText = response.text,
-                    committedChunks = response.chunks
+                    text = text,
+                    isFormatted = false
                 )
-                
                 _transcriptItems.value = _transcriptItems.value + newItem
-                Log.d(TAG, "총 아이템 수: ${_transcriptItems.value.size}")
             }
         }
 
+        // Formatted 텍스트 수집
         viewModelScope.launch {
-            Log.d(TAG, "Formatted 텍스트 수집 시작")
-            webSocketService.formattedTexts.collect { response ->
-                Log.d(TAG, "========== Formatted 텍스트 수신 ==========")
-                Log.d(TAG, "Text: ${response.text}")
-                Log.d(TAG, "Chunks: ${response.chunks}")
-
-                // 마지막 아이템을 찾아서 formatted로 업데이트
+            recordingSessionService.formattedTexts.collect { text ->
+                Log.d(TAG, "Formatted: $text")
                 val currentItems = _transcriptItems.value.toMutableList()
-                if (currentItems.isNotEmpty()) {
-                    // 아직 formatted가 적용되지 않은 가장 오래된 committed 찾기
-                    val indexToUpdate = currentItems.indexOfFirst { !it.isFormatted }
-                    
-                    if (indexToUpdate != -1) {
-                        val itemToUpdate = currentItems[indexToUpdate]
-                        val updatedItem = itemToUpdate.copy(
-                            formattedText = response.text,
-                            formattedChunks = response.chunks,
-                            isFormatted = true
-                        )
-                        currentItems[indexToUpdate] = updatedItem
-                        _transcriptItems.value = currentItems
-                        
-                        Log.d(TAG, "아이템 #${itemToUpdate.id} formatted 적용 완료")
-                        Log.d(TAG, "변경 전: ${itemToUpdate.committedChunks}")
-                        Log.d(TAG, "변경 후: ${updatedItem.displayChunks}")
-                    } else {
-                        Log.w(TAG, "formatted 적용할 아이템 없음 (모두 이미 formatted)")
-                    }
-                } else {
-                    Log.w(TAG, "formatted 적용할 아이템 없음 (목록 비어있음)")
+                val indexToUpdate = currentItems.indexOfFirst { !it.isFormatted }
+                if (indexToUpdate != -1) {
+                    currentItems[indexToUpdate] = currentItems[indexToUpdate].copy(
+                        text = text,
+                        isFormatted = true
+                    )
+                    _transcriptItems.value = currentItems
                 }
             }
         }
 
+        // 키워드 탐지
         viewModelScope.launch {
-            webSocketService.connectionState.collect { state ->
-                Log.d(TAG, "연결 상태 변경: $state")
+            recordingSessionService.detectedKeywords.collect { keywords ->
+                _detectedKeywords.value = keywords
+                // 5초 후 자동 제거
+                delay(5000)
+                if (_detectedKeywords.value == keywords) {
+                    _detectedKeywords.value = emptyList()
+                }
             }
         }
 
+        // 리소스 힌트
+        viewModelScope.launch {
+            recordingSessionService.resourceHints.collect { hints ->
+                _resourceHints.value = hints
+                // 10초 후 자동 제거
+                delay(10000)
+                if (_resourceHints.value == hints) {
+                    _resourceHints.value = emptyList()
+                }
+            }
+        }
+
+        // 녹음 상태 추적
         viewModelScope.launch {
             audioRecorderService.recordingState.collect { state ->
                 Log.d(TAG, "녹음 상태 변경: $state")
@@ -150,67 +166,145 @@ class RecordingViewModel(
         return audioRecorderService.hasRecordPermission()
     }
 
+    /**
+     * 녹음 시작 - 세션 생성 후 WebSocket 연결
+     */
     fun startRecording() {
         Log.d(TAG, "========== 녹음 시작 요청 ==========")
-        audioChunksSent = 0
         
-        // WebSocket 연결
-        Log.d(TAG, "WebSocket 연결 시도...")
-        webSocketService.connect()
+        if (_isCreatingSession.value) {
+            Log.w(TAG, "이미 세션 생성 중")
+            return
+        }
         
-        // 연결 완료 후 녹음 시작
+        _isCreatingSession.value = true
+        _error.value = null
+        
         viewModelScope.launch {
-            webSocketService.connectionState.collect { state ->
-                Log.d(TAG, "연결 상태 확인: $state, 녹음 중: ${_isRecording.value}")
-                if (state == ConnectionState.Connected && !_isRecording.value) {
-                    Log.d(TAG, "WebSocket 연결 완료 - 녹음 시작")
-                    audioRecorderService.startRecording()
-                    startTimer()
+            // 1. 세션 생성
+            recordingRepository.createSession(
+                title = null,
+                languageCode = languageCode,
+                keywordPackIds = keywordPackIds,
+                externalResourceIds = externalResourceIds
+            ).onSuccess { response ->
+                Log.d(TAG, "세션 생성 성공: ${response.sessionId}")
+                _sessionId.value = response.sessionId
+                _noteId.value = response.noteId
+                
+                // 2. WebSocket 연결
+                recordingSessionService.connect(response.sessionId)
+                
+                // 3. 연결 완료 대기 후 녹음 시작 (first로 한 번만 처리)
+                try {
+                    val readyState = connectionState.first { state ->
+                        state is SessionConnectionState.Ready ||
+                        state is SessionConnectionState.Connected ||
+                        state is SessionConnectionState.Error
+                    }
+                    
+                    when (readyState) {
+                        is SessionConnectionState.Ready, is SessionConnectionState.Connected -> {
+                            Log.d(TAG, "연결 준비 완료 ($readyState) - 녹음 시작")
+                            audioRecorderService.startRecording()
+                            startTimer()
+                            _isCreatingSession.value = false
+                        }
+                        is SessionConnectionState.Error -> {
+                            Log.e(TAG, "연결 실패: ${readyState.message}")
+                            _error.value = readyState.message
+                            _isCreatingSession.value = false
+                        }
+                        else -> {}
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "연결 대기 중 오류", e)
+                    _error.value = "연결 실패: ${e.message}"
+                    _isCreatingSession.value = false
                 }
+            }.onFailure { e ->
+                Log.e(TAG, "세션 생성 실패", e)
+                _error.value = "세션 생성 실패: ${e.message}"
+                _isCreatingSession.value = false
             }
         }
     }
 
-    fun stopRecording() {
+    /**
+     * 녹음 중지 - 세션 중지 API 호출
+     */
+    fun stopRecording(onComplete: ((String?) -> Unit)? = null) {
         Log.d(TAG, "========== 녹음 중지 요청 ==========")
-        Log.d(TAG, "총 전송된 오디오 청크: $audioChunksSent")
         
         audioRecorderService.stopRecording()
-        webSocketService.disconnect()
         stopTimer()
+        
+        val currentSessionId = _sessionId.value
+        if (currentSessionId != null) {
+            viewModelScope.launch {
+                recordingRepository.stopSession(currentSessionId)
+                    .onSuccess { response ->
+                        Log.d(TAG, "세션 중지 성공: ${response.message}")
+                        onComplete?.invoke(_noteId.value)
+                    }
+                    .onFailure { e ->
+                        Log.e(TAG, "세션 중지 실패", e)
+                        _error.value = "녹음 저장 실패: ${e.message}"
+                        onComplete?.invoke(null)
+                    }
+                
+                recordingSessionService.disconnect()
+            }
+        } else {
+            recordingSessionService.disconnect()
+            onComplete?.invoke(null)
+        }
     }
 
-    suspend fun saveNote(projectId: String): Note? {
-        if (_elapsedSeconds.value == 0L) {
-            Log.d(TAG, "녹음 시간이 0초이므로 저장하지 않음")
-            return null
-        }
-
-        val note = Note(
-            id = "${UUID.randomUUID()}",
-            type = NoteType.NOT_READY,
-            name = "녹음 ${LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("MM월 dd일 HH:mm"))}",
-            duration = _elapsedSeconds.value * 1000,
-            createdAt = LocalDateTime.now()
-        )
-
-        return try {
-            val savedNote = noteRepository.createNote(note)
-            Log.d(TAG, "노트 저장 완료: ${savedNote.id}")
-            savedNote
-        } catch (e: Exception) {
-            Log.e(TAG, "노트 저장 실패", e)
-            null
+    /**
+     * 녹음 취소 - 세션 취소 API 호출 (노트 삭제)
+     */
+    fun cancelRecording() {
+        Log.d(TAG, "========== 녹음 취소 요청 ==========")
+        
+        audioRecorderService.stopRecording()
+        stopTimer()
+        
+        val currentSessionId = _sessionId.value
+        if (currentSessionId != null) {
+            viewModelScope.launch {
+                recordingRepository.cancelSession(currentSessionId)
+                    .onSuccess {
+                        Log.d(TAG, "세션 취소 성공")
+                    }
+                    .onFailure { e ->
+                        Log.e(TAG, "세션 취소 실패", e)
+                    }
+                
+                recordingSessionService.disconnect()
+            }
+        } else {
+            recordingSessionService.disconnect()
         }
     }
 
     fun toggleRecording() {
         Log.d(TAG, "녹음 토글 - 현재 상태: ${_isRecording.value}")
         if (_isRecording.value) {
-            stopRecording()
+            audioRecorderService.stopRecording()
+            stopTimer()
         } else {
-            startRecording()
+            audioRecorderService.startRecording()
+            startTimer()
         }
+    }
+
+    fun setKeywordEnabled(enabled: Boolean) {
+        recordingSessionService.setKeywordEnabled(enabled)
+    }
+
+    fun setHintsEnabled(enabled: Boolean) {
+        recordingSessionService.setHintsEnabled(enabled)
     }
 
     private fun startTimer() {
@@ -239,19 +333,34 @@ class RecordingViewModel(
         Log.d(TAG, "========== ViewModel onCleared ==========")
         super.onCleared()
         audioRecorderService.release()
-        webSocketService.release()
+        recordingSessionService.release()
     }
 }
 
+// 트랜스크립트 아이템
+data class TranscriptItem(
+    val id: Int,
+    val text: String,
+    val isFormatted: Boolean = false
+)
+
 class RecordingViewModelFactory(
     private val context: Context,
-    private val noteRepository: NoteRepository,
-    private val languageCode: String = "ko-KR"
+    private val recordingRepository: RecordingRepository,
+    private val languageCode: String = "ko",
+    private val keywordPackIds: List<String> = emptyList(),
+    private val externalResourceIds: List<String> = emptyList()
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(RecordingViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return RecordingViewModel(context, noteRepository, languageCode) as T
+            return RecordingViewModel(
+                context, 
+                recordingRepository, 
+                languageCode,
+                keywordPackIds,
+                externalResourceIds
+            ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

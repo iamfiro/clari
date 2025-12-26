@@ -41,7 +41,10 @@ private fun Transcribe(transcribe: TranscriptLine) {
             .background(MaterialTheme.colorScheme.error),
             contentAlignment = Alignment.Center
         ) {
-            Text(transcribe.speaker.id.toString(), fontWeight = FontWeight.Bold)
+            Text(
+                transcribe.speaker.id.filter { it.isDigit() }.takeIf { it.isNotEmpty() }?.let { "${it.toInt() + 1}" } ?: "1",
+                fontWeight = FontWeight.Bold
+            )
         }
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

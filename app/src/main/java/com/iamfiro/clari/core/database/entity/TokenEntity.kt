@@ -6,6 +6,10 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "token")
 data class TokenEntity(
     @PrimaryKey val id: Int = 1,
-    val idToken: String
+    val sessionToken: String,
+    val userId: String? = null,
+    val userEmail: String? = null,
+    val userName: String? = null,
+    val userProfileUrl: String? = null
 )
 

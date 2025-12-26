@@ -1,6 +1,5 @@
 package com.iamfiro.clari.feature.user.component
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -17,17 +16,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.R
 
 @Composable
-fun AppleLoginButton() {
+fun AppleLoginButton(
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
     Row(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(14.dp))
             .border(
                 width = 1.dp,
@@ -37,10 +40,11 @@ fun AppleLoginButton() {
             .background(MaterialTheme.colorScheme.surface)
             .padding(vertical = 15.dp)
             .fillMaxWidth()
+            .alpha(if (enabled) 1f else 0.5f)
     ) {
         Icon(
             painter = painterResource(R.drawable.apple_logo),
-            contentDescription = "Google logo",
+            contentDescription = "Apple logo",
             modifier = Modifier.size(20.dp),
             tint = MaterialTheme.colorScheme.onSurface
         )

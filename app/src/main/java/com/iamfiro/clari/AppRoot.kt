@@ -12,25 +12,24 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
-import com.iamfiro.clari.core.database.AppDatabase
+import com.iamfiro.clari.core.network.ApiClient
 import com.iamfiro.clari.core.ui.AppNav
 import com.iamfiro.clari.core.ui.LocalCurrentScreen
 import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.Screen
-import kotlinx.coroutines.flow.first
 
 @Composable
 fun AppRoot() {
     val context = LocalContext.current
-    val database = remember {
-        AppDatabase.getInstance(context)
+    val tokenManager = remember {
+        ApiClient.getTokenManager()
     }
     
     var initialScreen by remember { mutableStateOf<Screen?>(null) }
     
     LaunchedEffect(Unit) {
-        val token = database.tokenDao().getToken().first()
-        initialScreen = if (token != null) Screen.Home else Screen.Onboard
+        val isLoggedIn = tokenManager.isLoggedIn()
+        initialScreen = if (isLoggedIn) Screen.Home else Screen.Onboard
     }
     
     val backStack: NavBackStack<NavKey>? = if (initialScreen != null) {

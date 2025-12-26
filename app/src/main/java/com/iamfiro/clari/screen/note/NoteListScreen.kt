@@ -26,7 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.iamfiro.clari.core.Repository.NoteRepository
+import com.iamfiro.clari.core.repository.NoteRepository
 import com.iamfiro.clari.feature.note.component.NewRecordingFloating
 import com.iamfiro.clari.feature.note.component.NoteCard
 import com.iamfiro.clari.util.toRelativeDateLabel
@@ -36,7 +36,7 @@ import java.time.ZoneId
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NoteListScreen() {
-    val noteRepository = remember { NoteRepository() }
+    val noteRepository = remember { NoteRepository.getInstance() }
     val viewModel: NoteListViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -51,7 +51,7 @@ fun NoteListScreen() {
     val today = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
 
     val groupedNotes = notes
-        .groupBy { it.createdAt }
+        .groupBy { it.createdAt.toLocalDate() }
         .toSortedMap(compareByDescending { it })
 
     Scaffold(
@@ -74,37 +74,37 @@ fun NoteListScreen() {
                         }
                     }
                 } else {
-                    groupedNotes.forEach { (date, notes) ->
-                    stickyHeader {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.background)
-                        ) {
-                            Text(
-                                toRelativeDateLabel(
-                                    dateTime = date,
-                                    now = today
-                                ),
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.secondary
-                            )
+                    groupedNotes.forEach { (date, notesForDate) ->
+                        stickyHeader {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.background)
+                            ) {
+                                Text(
+                                    toRelativeDateLabel(
+                                        dateTime = date.atStartOfDay(),
+                                        now = today
+                                    ),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                            }
                         }
-                    }
 
-                    item {
-                        Spacer(Modifier.height(1.dp))
-                    }
+                        item {
+                            Spacer(Modifier.height(1.dp))
+                        }
 
-                    items(
-                        items = notes,
-                    ) { note ->
-                        NoteCard(note)
-                    }
+                        items(
+                            items = notesForDate,
+                        ) { note ->
+                            NoteCard(note)
+                        }
 
-                    item {
-                        Spacer(Modifier.height(12.dp))
-                    }
+                        item {
+                            Spacer(Modifier.height(12.dp))
+                        }
                     }
                 }
 

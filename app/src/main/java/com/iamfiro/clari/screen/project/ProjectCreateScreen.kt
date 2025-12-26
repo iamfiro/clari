@@ -1,6 +1,5 @@
 package com.iamfiro.clari.screen.project
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,7 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.iamfiro.clari.R
-import com.iamfiro.clari.core.Repository.ProjectRepository
+import com.iamfiro.clari.core.repository.KeywordPackRepository
 import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.component.ConfirmBottomSheet
@@ -39,12 +37,12 @@ import com.iamfiro.clari.core.ui.theme.Dimens
 @Composable
 fun ProjectCreateScreen() {
     val backStack = LocalNavBackStack.current
-    val projectRepository = remember { ProjectRepository() }
+    val keywordPackRepository = remember { KeywordPackRepository.getInstance() }
     val viewModel: ProjectCreateViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                return ProjectCreateViewModel(projectRepository) as T
+                return ProjectCreateViewModel(keywordPackRepository) as T
             }
         }
     )
@@ -116,8 +114,9 @@ fun ProjectCreateScreen() {
         cancelText = "취소",
         onConfirm = {
             viewModel.createProject(
-                onSuccess = {
+                onSuccess = { projectId ->
                     backStack.removeLastOrNull()
+                    backStack.add(Screen.ProjectDetail(projectId))
                 },
                 onError = {
                     // TODO: 에러 처리 (Toast 등)
@@ -126,6 +125,3 @@ fun ProjectCreateScreen() {
         }
     )
 }
-
-
-

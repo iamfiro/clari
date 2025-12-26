@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import androidx.compose.ui.zIndex
 import com.iamfiro.clari.R
+import com.iamfiro.clari.core.service.KeywordHit
 import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.project.model.Word
 
@@ -55,6 +56,37 @@ fun WordCardOverlay(
                     .zIndex((maxVisible - index).toFloat())
             ) {
                 WordCardOverlayItem(word)
+            }
+        }
+    }
+}
+
+@Composable
+fun WordCardOverlay(
+    keywords: List<KeywordHit>,
+    onDismiss: () -> Unit,
+    maxVisible: Int = 3
+) {
+    val visibleKeywords = keywords.takeLast(maxVisible).reversed()
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(Dimens.ScreenPadding)
+    ) {
+        visibleKeywords.forEachIndexed { index, keyword ->
+            val offsetY = index * 12.dp
+            val scale = 1f - (index * 0.04f)
+            val alpha = 1f - (index * 0.1f)
+
+            Box(
+                modifier = Modifier
+                    .offset(y = offsetY)
+                    .scale(scale)
+                    .alpha(alpha)
+                    .zIndex((maxVisible - index).toFloat())
+            ) {
+                KeywordCardOverlayItem(keyword)
             }
         }
     }
@@ -102,6 +134,53 @@ fun WordCardOverlayItem(word: Word) {
 
         Text(
             word.meaning,
+            style = MaterialTheme.typography.labelLarge
+        )
+    }
+}
+
+@Composable
+fun KeywordCardOverlayItem(keyword: KeywordHit) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(16.dp),
+                clip = false,
+                ambientColor = Color.Black.copy(alpha = 0.12f),
+                spotColor = Color.Black.copy(alpha = 0.25f),
+            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(16.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.lightbulb),
+                contentDescription = null,
+                modifier = Modifier.size(16.dp).alpha(0.5f)
+            )
+            Text(
+                "키워드 탐지",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.secondary,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Text(
+            keyword.name,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text(
+            keyword.description,
             style = MaterialTheme.typography.labelLarge
         )
     }

@@ -35,7 +35,7 @@ class AudioRecorderService(private val context: Context) {
 
     private var chunkCount = 0
 
-    private val _audioChunks = MutableSharedFlow<String>(replay = 0)
+    private val _audioChunks = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 64)
     val audioChunks: SharedFlow<String> = _audioChunks.asSharedFlow()
 
     private val _recordingState = MutableSharedFlow<RecordingState>(replay = 1)
@@ -145,7 +145,10 @@ class AudioRecorderService(private val context: Context) {
                             Log.d(TAG, "최대 진폭: $maxAmplitude")
                         }
                         
-                        _audioChunks.emit(base64Audio)
+                        val emitted = _audioChunks.tryEmit(base64Audio)
+                        if (!emitted && chunkCount % 50 == 1) {
+                            Log.w(TAG, "⚠️ 오디오 청크 emit 실패 - 버퍼 가득 참")
+                        }
                     } else {
                         Log.w(TAG, "AudioRecord read 실패: $readResult")
                     }

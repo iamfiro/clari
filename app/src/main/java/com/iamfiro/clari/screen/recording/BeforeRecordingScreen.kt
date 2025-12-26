@@ -26,7 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.iamfiro.clari.core.Repository.ProjectRepository
+import com.iamfiro.clari.core.repository.ExternalResourceRepository
+import com.iamfiro.clari.core.repository.KeywordPackRepository
 import com.iamfiro.clari.core.ui.component.HeaderWithBackButton
 import com.iamfiro.clari.core.ui.component.SearchBar
 import com.iamfiro.clari.core.ui.LocalNavBackStack
@@ -37,12 +38,14 @@ import com.iamfiro.clari.feature.project.component.ProjectCard
 @Composable
 fun BeforeRecordingScreen() {
     val backStack = LocalNavBackStack.current
-    val projectRepository = remember { ProjectRepository() }
+    val keywordPackRepository = remember { KeywordPackRepository.getInstance() }
+    val externalResourceRepository = remember { ExternalResourceRepository.getInstance() }
+    
     val viewModel: BeforeRecordingViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                return BeforeRecordingViewModel(projectRepository) as T
+                return BeforeRecordingViewModel(keywordPackRepository, externalResourceRepository) as T
             }
         }
     )

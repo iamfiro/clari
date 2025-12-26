@@ -20,7 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.iamfiro.clari.core.Repository.ProjectRepository
+import com.iamfiro.clari.core.repository.KeywordPackRepository
 import com.iamfiro.clari.core.ui.LocalCurrentScreen
 import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.Screen
@@ -36,12 +36,12 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ProjectListScreen() {
-    val projectRepository = remember { ProjectRepository() }
+    val keywordPackRepository = remember { KeywordPackRepository.getInstance() }
     val viewModel: ProjectListViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                return ProjectListViewModel(projectRepository) as T
+                return ProjectListViewModel(keywordPackRepository) as T
             }
         }
     )
@@ -54,7 +54,7 @@ fun ProjectListScreen() {
 
     var showMenuModal by remember { mutableStateOf(false) }
     var showImportSheet by remember { mutableStateOf(false) }
-    var importLink by remember { mutableStateOf("") }
+    var importUrl by remember { mutableStateOf("") }
 
     LaunchedEffect(currentScreen) {
         if (currentScreen is Screen.ProjectList) {
@@ -104,7 +104,7 @@ fun ProjectListScreen() {
                     }
                 ),
                 BottomSheetMenuItem(
-                    title = "프로젝트 불러오기",
+                    title = "URL에서 가져오기",
                     onClick = {
                         showImportSheet = true
                     }
@@ -116,30 +116,27 @@ fun ProjectListScreen() {
             visible = showImportSheet,
             onDismiss = { 
                 showImportSheet = false
-                importLink = ""
+                importUrl = ""
             },
-            title = "프로젝트 불러오기",
+            title = "URL에서 가져오기",
             actions = listOf(
                 BottomSheetAction.Primary(
-                    text = "불러오기",
-                    enabled = importLink.isNotBlank(),
+                    text = "가져오기",
+                    enabled = importUrl.isNotBlank(),
                     onClick = {
-                        if (importLink.isNotBlank()) {
-                            scope.launch {
-                                projectRepository.importProjectByLink(importLink)
-                                viewModel.refresh()
-                            }
+                        if (importUrl.isNotBlank()) {
+                            // TODO: URL에서 키워드팩 가져오기 구현
                             showImportSheet = false
-                            importLink = ""
+                            importUrl = ""
                         }
                     }
                 )
             )
         ) {
             OutlinedTextField(
-                value = importLink,
-                onValueChange = { importLink = it },
-                label = { Text("링크 입력") },
+                value = importUrl,
+                onValueChange = { importUrl = it },
+                label = { Text("URL 입력") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )

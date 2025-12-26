@@ -23,6 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,16 +35,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.iamfiro.clari.core.repository.ExternalResourceRepository
+import com.iamfiro.clari.core.repository.KeywordPackRepository
 import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.component.HeaderWithBackButton
 import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.recording.Language
+import kotlinx.coroutines.launch
 
 @Composable
 fun LanguageSelectScreen(projectId: String) {
     val context = LocalContext.current
     val backStack = LocalNavBackStack.current
+    val scope = rememberCoroutineScope()
+    val keywordPackRepository = remember { KeywordPackRepository.getInstance() }
+    val externalResourceRepository = remember { ExternalResourceRepository.getInstance() }
+    
     val viewModel: LanguageSelectionViewModel = viewModel(
         factory = LanguageSelectionViewModelFactory(context)
     )
@@ -100,7 +109,39 @@ fun LanguageSelectScreen(projectId: String) {
                     onClick = {
                         selectedLanguage?.let { language ->
                             viewModel.saveLanguageSelection()
-                            backStack.add(Screen.Recording(projectId, language.getCountryCode()))
+                            
+                            // 프로젝트 상세 정보를 가져와서 externalResourceIds 추출
+                            scope.launch {
+                                val externalResourceIds = mutableListOf<String>()
+                                
+                                // 프로젝트 상세 정보 가져오기
+                                keywordPackRepository.getKeywordPackById(projectId)
+                                    .onSuccess { project ->
+                                        // 프로젝트의 connector URL을 기반으로 externalResource 찾기
+                                        project.connector?.forEach { connector ->
+                                            // 모든 externalResource를 가져와서 URL로 매칭
+                                            externalResourceRepository.getAllResources()
+                                                .onSuccess { resources ->
+                                                    resources.forEach { resource ->
+                                                        if (resource.url == connector.url || 
+                                                            resource.displayUrl == connector.url) {
+                                                            externalResourceIds.add(resource.id)
+                                                        }
+                                                    }
+                                                }
+                                        }
+                                    }
+                                
+                                // 모든 비동기 작업 완료 후 Recording 화면으로 이동
+                                backStack.add(
+                                    Screen.Recording(
+                                        projectId = projectId,
+                                        languageCode = language.getCountryCode(),
+                                        keywordPackIds = listOf(projectId), // 프로젝트 ID를 keywordPackIds에 포함
+                                        externalResourceIds = externalResourceIds.distinct() // 중복 제거
+                                    )
+                                )
+                            }
                         }
                     },
                     enabled = selectedLanguage != null,

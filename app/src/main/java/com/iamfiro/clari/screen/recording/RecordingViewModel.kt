@@ -82,6 +82,7 @@ class RecordingViewModel(
     
     private var timerJob: Job? = null
     private var itemIdCounter = 0
+    private var keywordDismissJob: Job? = null
 
     init {
         Log.d(TAG, "========== RecordingViewModel 초기화 ==========")
@@ -127,12 +128,21 @@ class RecordingViewModel(
 
         // 키워드 탐지
         viewModelScope.launch {
-            recordingSessionService.detectedKeywords.collect { keywords ->
-                _detectedKeywords.value = keywords
-                // 5초 후 자동 제거
-                delay(5000)
-                if (_detectedKeywords.value == keywords) {
-                    _detectedKeywords.value = emptyList()
+            recordingSessionService.detectedKeywords.collect { newKeywords ->
+                val currentKeywords = _detectedKeywords.value
+                
+                // 키워드 리스트가 변경된 경우
+                if (newKeywords != currentKeywords) {
+                    _detectedKeywords.value = newKeywords
+                    
+                    if (newKeywords.isEmpty()) {
+                        // 모든 키워드가 제거된 경우
+                        keywordDismissJob?.cancel()
+                    } else if (newKeywords.size > currentKeywords.size || currentKeywords.isEmpty()) {
+                        // 새로운 키워드가 추가되었거나 처음 키워드가 추가된 경우
+                        // 가장 앞에 있는 카드만 타이머 시작 (뒤에 있는 카드들은 대기)
+                        startKeywordDismissTimer()
+                    }
                 }
             }
         }
@@ -240,23 +250,31 @@ class RecordingViewModel(
         stopTimer()
         
         val currentSessionId = _sessionId.value
+        val savedNoteId = _noteId.value
+        
         if (currentSessionId != null) {
             viewModelScope.launch {
                 recordingRepository.stopSession(currentSessionId)
                     .onSuccess { response ->
                         Log.d(TAG, "세션 중지 성공: ${response.message}")
-                        onComplete?.invoke(_noteId.value)
+                        recordingSessionService.disconnect()
+                        // 상태 초기화
+                        resetRecordingState()
+                        onComplete?.invoke(savedNoteId)
                     }
                     .onFailure { e ->
                         Log.e(TAG, "세션 중지 실패", e)
                         _error.value = "녹음 저장 실패: ${e.message}"
+                        recordingSessionService.disconnect()
+                        // 상태 초기화
+                        resetRecordingState()
                         onComplete?.invoke(null)
                     }
-                
-                recordingSessionService.disconnect()
             }
         } else {
             recordingSessionService.disconnect()
+            // 상태 초기화
+            resetRecordingState()
             onComplete?.invoke(null)
         }
     }
@@ -282,9 +300,13 @@ class RecordingViewModel(
                     }
                 
                 recordingSessionService.disconnect()
+                // 상태 초기화
+                resetRecordingState()
             }
         } else {
             recordingSessionService.disconnect()
+            // 상태 초기화
+            resetRecordingState()
         }
     }
 
@@ -327,6 +349,57 @@ class RecordingViewModel(
         val minutes = seconds / 60
         val secs = seconds % 60
         return "%02d:%02d".format(minutes, secs)
+    }
+    
+    /**
+     * 가장 앞에 있는 키워드 카드만 5초 타이머를 시작
+     * 카드가 사라지면 다음 카드의 타이머를 시작
+     */
+    private fun startKeywordDismissTimer() {
+        keywordDismissJob?.cancel()
+        keywordDismissJob = viewModelScope.launch {
+            while (_detectedKeywords.value.isNotEmpty()) {
+                // 가장 앞에 있는 카드만 5초 대기
+                delay(5000)
+                
+                // 타이머가 끝난 후에도 키워드가 남아있는지 확인
+                val currentKeywords = _detectedKeywords.value
+                if (currentKeywords.isNotEmpty()) {
+                    // 가장 마지막에 있는 카드 제거 (가장 최근 카드부터 제거)
+                    val updatedKeywords = currentKeywords.dropLast(1)
+                    _detectedKeywords.value = updatedKeywords
+                    
+                    // 다음 카드가 있으면 타이머를 다시 시작
+                    if (updatedKeywords.isNotEmpty()) {
+                        // 다음 카드의 타이머는 이미 시작됨 (while 루프가 계속됨)
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * 녹음 상태 초기화 - 다시 녹음할 수 있도록 모든 상태를 리셋
+     */
+    fun resetRecordingState() {
+        Log.d(TAG, "========== 녹음 상태 초기화 ==========")
+        
+        audioRecorderService.stopRecording()
+        stopTimer()
+        recordingSessionService.disconnect()
+        
+        _sessionId.value = null
+        _noteId.value = null
+        _transcriptItems.value = emptyList()
+        _detectedKeywords.value = emptyList()
+        _resourceHints.value = emptyList()
+        _isRecording.value = false
+        _isCreatingSession.value = false
+        _elapsedSeconds.value = 0
+        _error.value = null
+        itemIdCounter = 0
+        
+        Log.d(TAG, "✅ 상태 초기화 완료 - 다시 녹음 가능")
     }
     
     override fun onCleared() {

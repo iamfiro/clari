@@ -110,7 +110,7 @@ fun HomeScreen() {
                             }
                         } else {
                             keywordPacks.take(2).forEach { pack ->
-                                ProjectCard(pack)
+                                ProjectCard(pack, onClick = { backStack.add(Screen.ProjectDetail(pack.id)) })
                             }
                         }
                     }

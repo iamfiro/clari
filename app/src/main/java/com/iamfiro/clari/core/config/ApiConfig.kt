@@ -2,13 +2,13 @@ package com.iamfiro.clari.core.config
 
 object ApiConfig {
     // 서버 기본 설정
-    private const val HOST = "pin-renaissance-meters-britannica.trycloudflare.com"
+    private const val HOST = "172.30.2.38:3000"
     
     // HTTP API
-    const val BASE_URL = "https://$HOST/"
+    const val BASE_URL = "http://$HOST/"
     
     // WebSocket 기본 URL
-    private const val WS_BASE_URL = "wss://$HOST"
+    private const val WS_BASE_URL = "ws://$HOST"
     
     // WebSocket 엔드포인트
     object WebSocket {

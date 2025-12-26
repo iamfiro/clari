@@ -56,6 +56,7 @@ fun RecordingScreen(
     
     var showConfirmBottomSheet by remember { mutableStateOf(false) }
     var showCancelBottomSheet by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
 
     val viewModel: RecordingViewModel = viewModel(
         factory = RecordingViewModelFactory(
@@ -188,11 +189,27 @@ fun RecordingScreen(
                         is SessionConnectionState.Error -> com.iamfiro.clari.core.service.ConnectionState.Error((connectionState as SessionConnectionState.Error).message)
                         else -> com.iamfiro.clari.core.service.ConnectionState.Disconnected
                     },
-                    isLoading = isCreatingSession,
+                    isLoading = isCreatingSession || isSaving,
                     onToggleRecording = {
                         Log.d(TAG, "녹음 버튼 클릭")
                         if (!hasPermission) {
                             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        } else if (isRecording) {
+                            // 녹음 중이면 자동으로 저장하고 NoteDetail로 이동
+                            isSaving = true
+                            viewModel.stopRecording { noteId ->
+                                isSaving = false
+                                if (noteId != null) {
+                                    Log.d(TAG, "녹음 저장 완료, NoteDetail로 이동: $noteId")
+                                    backStack.removeLastOrNull()
+                                    backStack.add(Screen.NoteDetail(noteId))
+                                } else {
+                                    Log.e(TAG, "녹음 저장 실패")
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("녹음 저장에 실패했습니다")
+                                    }
+                                }
+                            }
                         } else {
                             viewModel.toggleRecording()
                         }
@@ -209,7 +226,7 @@ fun RecordingScreen(
             }
         }
         
-        // 녹음 완료 확인
+        // 녹음 완료 확인 (헤더의 종료 버튼용)
         ConfirmBottomSheet(
             visible = showConfirmBottomSheet,
             onDismiss = { showConfirmBottomSheet = false },
@@ -218,11 +235,18 @@ fun RecordingScreen(
             confirmText = "저장하기",
             cancelText = "취소",
             onConfirm = {
+                isSaving = true
                 viewModel.stopRecording { noteId ->
+                    isSaving = false
                     if (noteId != null) {
+                        Log.d(TAG, "녹음 저장 완료, NoteDetail로 이동: $noteId")
                         backStack.removeLastOrNull()
                         backStack.add(Screen.NoteDetail(noteId))
                     } else {
+                        Log.e(TAG, "녹음 저장 실패")
+                        scope.launch {
+                            snackbarHostState.showSnackbar("녹음 저장에 실패했습니다")
+                        }
                         backStack.removeLastOrNull()
                     }
                 }

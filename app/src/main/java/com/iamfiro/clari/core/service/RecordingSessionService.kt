@@ -163,6 +163,7 @@ class RecordingSessionService(private val tokenManager: TokenManager) {
         override fun onMessage(ws: WebSocket, bytes: ByteString) {
             Log.d(TAG, "========== 바이너리 메시지 수신 ==========")
             Log.d(TAG, "bytes: ${bytes.size}")
+
             val text = runCatching { bytes.utf8() }.getOrNull()
             if (text.isNullOrEmpty()) return
             logLong(text)
@@ -212,6 +213,10 @@ class RecordingSessionService(private val tokenManager: TokenManager) {
                     mainScope.launch {
                         _connectionState.value = SessionConnectionState.Ready
                         flushPreReadyAudio()
+                        // Ready 상태가 되면 keyword와 hints를 모두 on으로 설정
+                        sendControl("keyword.control", "on")
+                        sendControl("hints.control", "on")
+                        Log.d(TAG, "✅ Keyword detection과 Resource hints를 모두 활성화했습니다")
                     }
                 }
 

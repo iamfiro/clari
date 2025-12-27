@@ -18,8 +18,10 @@ import com.iamfiro.clari.core.ui.skeleton.rememberSkeletonAlpha
 fun NoteCardSkeleton(size: Int = 3) {
     val alpha = rememberSkeletonAlpha()
 
-    repeat(size) {
-        Skeleton(alpha)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        repeat(size) {
+            Skeleton(alpha)
+        }
     }
 }
 

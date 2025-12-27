@@ -108,4 +108,13 @@ class RecordingProjectSelectionViewModel() : ViewModel() {
     fun getSelectedResourceIds(): List<String> {
         return _selectedResourceIds.value
     }
+
+    /**
+     * 프로젝트 없이 시작하기 버튼 클릭 시 호출되는 함수
+     * 프로젝트 선택을 초기화하고 프로젝트 없이 시작하는 상태로 설정
+     */
+    fun startWithoutProject() {
+        _uiState.value = _uiState.value.copy(selectedProject = null)
+        Log.d(TAG, "프로젝트 없이 시작하기 선택")
+    }
 }

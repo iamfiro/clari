@@ -43,12 +43,15 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LanguageSelectScreen(projectId: String) {
+    val context = LocalContext.current
     val backStack = LocalNavBackStack.current
     val scope = rememberCoroutineScope()
     val projectRepository = remember { ProjectRepository.getInstance() }
     val externalResourceRepository = remember { ExternalResourceRepository.getInstance() }
     
-    val viewModel: LanguageSelectionViewModel = viewModel()
+    val viewModel: LanguageSelectionViewModel = viewModel(
+        factory = LanguageSelectionViewModel.factory(context)
+    )
 
     val selectedLanguage by viewModel.selectedLanguage.collectAsState()
 
@@ -108,30 +111,33 @@ fun LanguageSelectScreen(projectId: String) {
                             scope.launch {
                                 val externalResourceIds = mutableListOf<String>()
                                 
-                                // 프로젝트 상세 정보 가져오기
-                                projectRepository.getKeywordPackById(projectId)
-                                    .onSuccess { project ->
-                                        // 프로젝트의 connector URL을 기반으로 externalResource 찾기
-                                        project.connector?.forEach { connector ->
-                                            // 모든 externalResource를 가져와서 URL로 매칭
-                                            externalResourceRepository.getAllResources()
-                                                .onSuccess { resources ->
-                                                    resources.forEach { resource ->
-                                                        if (resource.url == connector.url || 
-                                                            resource.displayUrl == connector.url) {
-                                                            externalResourceIds.add(resource.id)
+                                // 프로젝트 없이 시작하는 경우 (projectId가 빈 문자열) 처리
+                                if (projectId.isNotEmpty()) {
+                                    // 프로젝트 상세 정보 가져오기
+                                    projectRepository.getKeywordPackById(projectId)
+                                        .onSuccess { project ->
+                                            // 프로젝트의 connector URL을 기반으로 externalResource 찾기
+                                            project.connector?.forEach { connector ->
+                                                // 모든 externalResource를 가져와서 URL로 매칭
+                                                externalResourceRepository.getAllResources()
+                                                    .onSuccess { resources ->
+                                                        resources.forEach { resource ->
+                                                            if (resource.url == connector.url || 
+                                                                resource.displayUrl == connector.url) {
+                                                                externalResourceIds.add(resource.id)
+                                                            }
                                                         }
                                                     }
-                                                }
+                                            }
                                         }
-                                    }
+                                }
                                 
                                 // 모든 비동기 작업 완료 후 Recording 화면으로 이동
                                 backStack.add(
                                     Screen.Recording(
                                         projectId = projectId,
                                         languageCode = language.getCountryCode(),
-                                        keywordPackIds = listOf(projectId), // 프로젝트 ID를 keywordPackIds에 포함
+                                        keywordPackIds = if (projectId.isNotEmpty()) listOf(projectId) else emptyList(), // 프로젝트 ID를 keywordPackIds에 포함
                                         externalResourceIds = externalResourceIds.distinct() // 중복 제거
                                     )
                                 )

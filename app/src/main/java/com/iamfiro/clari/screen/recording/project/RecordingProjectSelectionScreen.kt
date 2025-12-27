@@ -4,14 +4,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -23,11 +27,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.iamfiro.clari.R
 import com.iamfiro.clari.core.repository.ExternalResourceRepository
 import com.iamfiro.clari.core.repository.ProjectRepository
 import com.iamfiro.clari.core.ui.component.HeaderWithBackButton
@@ -41,7 +47,7 @@ import com.iamfiro.clari.feature.project.component.projectCard.ProjectCardSkelet
 @Composable
 fun RecordingProjectSelectionScreen() {
     val backStack = LocalNavBackStack.current
-    
+
     val viewModel: RecordingProjectSelectionViewModel = viewModel()
 
     val uiState by viewModel.uiState.collectAsState()
@@ -63,6 +69,28 @@ fun RecordingProjectSelectionScreen() {
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                         modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)
                     ) {
+                        Button(
+                            onClick = {
+                                viewModel.startWithoutProject()
+                                // 프로젝트 없이 시작하기: 빈 projectId로 LanguageSelectScreen으로 이동
+                                backStack.add(Screen.LanguageSelectScreen(projectId = ""))
+                            },
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.shell),
+                                    "none",
+                                    modifier = Modifier.size(18.dp)
+                                )
+
+                                Text("프로젝트 없이 시작하기", fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+
                         SearchBar(uiState.searchQuery, { viewModel.updateSearchQuery(it) })
 
                         if (uiState.isLoading) {

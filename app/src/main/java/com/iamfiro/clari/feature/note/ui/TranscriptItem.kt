@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.note.model.TranscriptLine
 import com.iamfiro.clari.feature.note.model.TranscriptWord
 import com.iamfiro.clari.util.formatMmSs
@@ -50,7 +51,7 @@ fun TranscriptItem(
 ) {
     val backgroundColor by animateColorAsState(
         targetValue = if (isHighlighted)
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.05f)
         else
             Color.Transparent,
         animationSpec = tween(300),
@@ -62,6 +63,7 @@ fun TranscriptItem(
         modifier = modifier
             .fillMaxWidth()
             .background(backgroundColor)
+            .padding(horizontal = Dimens.ScreenPadding)
             .clickable { onClick() }
             .padding(vertical = 12.dp)
     ) {
@@ -115,11 +117,11 @@ fun TranscriptItem(
 
                         withStyle(
                             style = SpanStyle(
-                                fontWeight = if (isCurrentWord && isCurrentlyPlaying) FontWeight.Bold else FontWeight.Normal,
+                                fontWeight = if (isCurrentWord && (isCurrentlyPlaying || isHighlighted)) FontWeight.Bold else FontWeight.Normal,
                                 color = textColor,
                                 fontSize = 15.sp,
-                                background = if (isCurrentWord && isCurrentlyPlaying)
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                background = if (isCurrentWord && (isCurrentlyPlaying || isHighlighted))
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                                 else
                                     Color.Transparent
                             )
@@ -151,7 +153,6 @@ fun TranscriptItem(
                     }
                 )
             } else {
-                // 기본 텍스트 렌더링
                 Text(
                     transcript.text,
                     fontSize = 15.sp,

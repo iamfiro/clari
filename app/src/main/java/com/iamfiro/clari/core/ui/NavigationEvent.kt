@@ -7,3 +7,4 @@ sealed interface NavigationEvent {
     data class ReplaceCurrent(val screen: Screen) : NavigationEvent
 }
 
+

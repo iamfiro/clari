@@ -77,21 +77,25 @@ fun NoteDetailContent(
                 state = listState,
                 modifier = modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Dimens.ScreenPadding)
             ) {
                 item { Spacer(Modifier.height(headerHeight + 32.dp)) }
 
                 item {
-                    AISummarySection(note?.aiSummary?.content ?: "")
+                    Box(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
+                        AISummarySection(note?.aiSummary?.content ?: "")
+                    }
                     Spacer(Modifier.height(24.dp))
                 }
 
                 item {
-                    Text(
-                        "음성 기록",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Box(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
+                        Text(
+                            "음성 기록",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
 
                 item { Spacer(Modifier.height(12.dp)) }

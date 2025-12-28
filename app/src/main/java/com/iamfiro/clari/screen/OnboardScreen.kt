@@ -3,6 +3,7 @@ package com.iamfiro.clari.screen
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,11 +24,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
@@ -41,6 +46,7 @@ import com.iamfiro.clari.core.network.ApiClient
 import com.iamfiro.clari.core.repository.AuthRepository
 import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.Screen
+import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.user.component.AppleLoginButton
 import com.iamfiro.clari.feature.user.component.GoogleLoginButton
 import kotlinx.coroutines.launch
@@ -52,11 +58,8 @@ fun OnboardScreen() {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val backStack = LocalNavBackStack.current
-    
-    var isLoading by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = true) {
-    }
+    var isLoading by remember { mutableStateOf(false) }
 
     val credentialManager = remember {
         CredentialManager.create(context)
@@ -87,7 +90,7 @@ fun OnboardScreen() {
             Log.d(TAG, "이미 로딩 중이므로 반환")
             return
         }
-        
+
         coroutineScope.launch {
             Log.d(TAG, "구글 로그인 프로세스 시작")
             isLoading = true
@@ -101,8 +104,11 @@ fun OnboardScreen() {
                 Log.d(TAG, "Credential 획득 성공")
 
                 val credential = result.credential
-                Log.d(TAG, "Credential 타입: ${credential.type}, 데이터 크기: ${credential.data.size()} bytes")
-                
+                Log.d(
+                    TAG,
+                    "Credential 타입: ${credential.type}, 데이터 크기: ${credential.data.size()} bytes"
+                )
+
                 val googleIdTokenCredential = GoogleIdTokenCredential
                     .createFrom(credential.data)
                 Log.d(TAG, "GoogleIdTokenCredential 생성 완료")
@@ -120,18 +126,28 @@ fun OnboardScreen() {
                 Log.d(TAG, "백엔드 API 인증 요청 시작")
                 val authResult = authRepository.loginWithGoogle(idToken)
                 Log.d(TAG, "백엔드 API 인증 요청 완료")
-                
+
                 authResult.fold(
                     onSuccess = { response ->
-                        Log.d(TAG, "백엔드 인증 성공 - 이메일: ${response.user.email}, 사용자 ID: ${response.user.id}")
+                        Log.d(
+                            TAG,
+                            "백엔드 인증 성공 - 이메일: ${response.user.email}, 사용자 ID: ${response.user.id}"
+                        )
                         Log.d(TAG, "홈 화면으로 이동")
                         backStack.clear()
                         backStack.add(Screen.Home)
                     },
                     onFailure = { error ->
-                        Log.e(TAG, "백엔드 인증 실패 - 에러 타입: ${error.javaClass.simpleName}, 메시지: ${error.message}", error)
-                        error.stackTrace.take(5).forEach { 
-                            Log.e(TAG, "  at ${it.className}.${it.methodName}(${it.fileName}:${it.lineNumber})")
+                        Log.e(
+                            TAG,
+                            "백엔드 인증 실패 - 에러 타입: ${error.javaClass.simpleName}, 메시지: ${error.message}",
+                            error
+                        )
+                        error.stackTrace.take(5).forEach {
+                            Log.e(
+                                TAG,
+                                "  at ${it.className}.${it.methodName}(${it.fileName}:${it.lineNumber})"
+                            )
                         }
                         Toast.makeText(
                             context,
@@ -150,7 +166,11 @@ fun OnboardScreen() {
                 e.printStackTrace()
                 Toast.makeText(context, "인증 정보 처리 중 오류가 발생했습니다", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                Log.e(TAG, "로그인 중 예상치 못한 오류 발생 - 타입: ${e.javaClass.simpleName}, 메시지: ${e.message}", e)
+                Log.e(
+                    TAG,
+                    "로그인 중 예상치 못한 오류 발생 - 타입: ${e.javaClass.simpleName}, 메시지: ${e.message}",
+                    e
+                )
                 e.printStackTrace()
                 Toast.makeText(context, "로그인 중 오류가 발생했습니다", Toast.LENGTH_SHORT).show()
             } finally {
@@ -159,25 +179,35 @@ fun OnboardScreen() {
             }
         }
     }
-    
+
     val isDarkMode = isSystemInDarkTheme()
     val topBoxColor = if (isDarkMode) {
         MaterialTheme.colorScheme.primaryContainer
     } else {
         androidx.compose.ui.graphics.Color(0xFFA6C9EB)
     }
-    
+
     Box(modifier = Modifier.fillMaxHeight()) {
         Column(
             verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxHeight()
         ) {
             Box(
-                Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .background(topBoxColor)
-            )
+                    .padding(horizontal = Dimens.ScreenPadding),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.service),
+                    contentDescription = "service",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter),
+                )
+            }
             Column(
                 verticalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier
@@ -225,7 +255,7 @@ fun OnboardScreen() {
                 }
             }
         }
-        
+
         // 로딩 인디케이터
         if (isLoading) {
             Box(

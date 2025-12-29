@@ -74,6 +74,7 @@ fun RecordingScreen(
     )
 
     val isRecording by viewModel.isRecording.collectAsState()
+    val isPaused by viewModel.isPaused.collectAsState()
     val isCreatingSession by viewModel.isCreatingSession.collectAsState()
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
@@ -162,11 +163,18 @@ fun RecordingScreen(
             ) {
                 RecordingHeader(
                     onBackClick = {
+                        viewModel.pauseRecording()
                         showCancelBottomSheet = true
                     },
                     onExitClick = {
-                        showConfirmBottomSheet = true
-                    }
+                        viewModel.pauseRecording()
+                        if (elapsedSeconds < 10) {
+                            showCancelBottomSheet = true
+                        } else {
+                            showConfirmBottomSheet = true
+                        }
+                    },
+                    isPaused = isPaused
                 )
                 Box(modifier = Modifier.weight(1f)) {
                     TranscribeContainer(
@@ -204,6 +212,7 @@ fun RecordingScreen(
                 
                 RecordingControl(
                     isRecording = isRecording,
+                    isPaused = isPaused,
                     elapsedTime = viewModel.formatElapsedTime(elapsedSeconds),
                     connectionState = when (connectionState) {
                         is SessionConnectionState.Connected, 
@@ -247,7 +256,10 @@ fun RecordingScreen(
 
         ConfirmBottomSheet(
             visible = showConfirmBottomSheet,
-            onDismiss = { showConfirmBottomSheet = false },
+            onDismiss = { 
+                showConfirmBottomSheet = false
+                viewModel.resumeRecording()
+            },
             title = "녹음을 저장하시겠어요?",
             message = "지금까지 녹음한 내용이 저장됩니다.",
             confirmText = "저장하기",
@@ -274,15 +286,19 @@ fun RecordingScreen(
             },
             onCancel = {
                 showConfirmBottomSheet = false
+                viewModel.resumeRecording()
             }
         )
 
         ConfirmBottomSheet(
             visible = showCancelBottomSheet,
-            onDismiss = { showCancelBottomSheet = false },
-            title = "녹음을 취소하시겠어요?",
-            message = "녹음한 내용이 모두 삭제됩니다.",
-            confirmText = "취소하기",
+            onDismiss = { 
+                showCancelBottomSheet = false
+                viewModel.resumeRecording()
+            },
+            title = if (elapsedSeconds < 10) "녹음이 10초 미만입니다" else "녹음을 취소하시겠어요?",
+            message = if (elapsedSeconds < 10) "10초 이내의 녹음은 저장되지 않습니다. 그래도 계속하시겠어요?" else "녹음한 내용이 모두 삭제됩니다.",
+            confirmText = if (elapsedSeconds < 10) "삭제하기" else "취소하기",
             cancelText = "돌아가기",
             onConfirm = {
                 viewModel.cancelRecording()
@@ -290,6 +306,7 @@ fun RecordingScreen(
             },
             onCancel = {
                 showCancelBottomSheet = false
+                viewModel.resumeRecording()
             }
         )
         

@@ -99,11 +99,11 @@ fun ProjectCreateScreen() {
 
             Button(
                 onClick = { showConfirmSheet = true },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().height(60.dp),
                 enabled = projectName.isNotBlank() && !isLoading,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(20.dp)
             ) {
-                Text("생성하기")
+                Text("생성하기", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
             }
         }
     }

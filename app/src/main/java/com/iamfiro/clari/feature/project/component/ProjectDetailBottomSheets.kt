@@ -77,6 +77,7 @@ fun AddWordBottomSheet(
     onGetAiSuggestions: ((String) -> Unit)? = null,
     onGenerateDescription: (suspend (String) -> Result<List<String>>)? = null
 ) {
+    var isGeneratingDescription by remember { mutableStateOf(false) }
     BottomSheetWithHeader(
         visible = visible,
         onDismiss = onDismiss,
@@ -181,14 +182,17 @@ fun AddWordBottomSheet(
                     if (wordName.isBlank()) {
                         Toast.makeText(context, "단어 이름을 입력해주세요", Toast.LENGTH_SHORT).show()
                     } else if (onGenerateDescription != null) {
+                        isGeneratingDescription = true
                         scope.launch {
                             onGenerateDescription(wordName)
                                 .onSuccess { suggestions ->
                                     generatedSuggestions = suggestions
+                                    isGeneratingDescription = false
                                 }
                                 .onFailure {
                                     Toast.makeText(context, "AI 생성에 실패했습니다", Toast.LENGTH_SHORT).show()
                                     generatedSuggestions = emptyList()
+                                    isGeneratingDescription = false
                                 }
                         }
                     }
@@ -198,10 +202,10 @@ fun AddWordBottomSheet(
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-                enabled = onGenerateDescription != null && !isAiLoading
+                enabled = onGenerateDescription != null && !isGeneratingDescription
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (isAiLoading) {
+                    if (isGeneratingDescription) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
                             strokeWidth = 2.dp
@@ -662,6 +666,7 @@ fun AiWordGenerationBottomSheet(
                 Text(
                     "단어를 생성중이에요...",
                     style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(Modifier.height(8.dp))
@@ -709,6 +714,7 @@ fun AiWordGenerationBottomSheet(
                             Text(
                                 text = word.name,
                                 style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
@@ -718,8 +724,6 @@ fun AiWordGenerationBottomSheet(
                                 text = word.meaning,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.secondary,
-                                maxLines = 4,
-                                overflow = TextOverflow.Ellipsis
                             )
                         }
                         
@@ -798,6 +802,7 @@ fun AiWordGenerationBottomSheet(
                         Text(
                             text = count.ifBlank { "0" },
                             style = MaterialTheme.typography.displaySmall,
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f),
                             textAlign = TextAlign.Center

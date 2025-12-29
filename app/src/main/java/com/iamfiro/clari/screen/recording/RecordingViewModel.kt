@@ -70,6 +70,9 @@ class RecordingViewModel(
     private val _isRecording = MutableStateFlow(false)
     val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
 
+    private val _isPaused = MutableStateFlow(false)
+    val isPaused: StateFlow<Boolean> = _isPaused.asStateFlow()
+
     private val _isCreatingSession = MutableStateFlow(false)
     val isCreatingSession: StateFlow<Boolean> = _isCreatingSession.asStateFlow()
 
@@ -285,6 +288,24 @@ class RecordingViewModel(
         }
     }
 
+    fun pauseRecording() {
+        Log.d(TAG, "녹음 일시중지")
+        if (_isRecording.value && !_isPaused.value) {
+            audioRecorderService.stopRecording()
+            timerJob?.cancel()
+            _isPaused.value = true
+        }
+    }
+
+    fun resumeRecording() {
+        Log.d(TAG, "녹음 재개")
+        if (_isPaused.value) {
+            audioRecorderService.startRecording()
+            resumeTimer()
+            _isPaused.value = false
+        }
+    }
+
     fun setKeywordEnabled(enabled: Boolean) {
         recordingSessionService.setKeywordEnabled(enabled)
     }
@@ -300,6 +321,16 @@ class RecordingViewModel(
     private fun startTimer() {
         timerJob?.cancel()
         _elapsedSeconds.value = 0
+        timerJob = viewModelScope.launch {
+            while (true) {
+                delay(1000)
+                _elapsedSeconds.value++
+            }
+        }
+    }
+
+    private fun resumeTimer() {
+        timerJob?.cancel()
         timerJob = viewModelScope.launch {
             while (true) {
                 delay(1000)
@@ -332,6 +363,7 @@ class RecordingViewModel(
         _detectedKeywords.value = emptyList()
         _resourceHints.value = emptyList()
         _isRecording.value = false
+        _isPaused.value = false
         _isCreatingSession.value = false
         _elapsedSeconds.value = 0
         _error.value = null

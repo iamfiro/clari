@@ -36,12 +36,13 @@ private const val TAG = "RecordingControl"
 @Composable
 fun RecordingControl(
     isRecording: Boolean = false,
+    isPaused: Boolean = false,
     elapsedTime: String = "00:00",
     connectionState: ConnectionState = ConnectionState.Disconnected,
     isLoading: Boolean = false,
     onToggleRecording: () -> Unit = {}
 ) {
-    Log.d(TAG, "RecordingControl 렌더링 - isRecording: $isRecording, connectionState: $connectionState, isLoading: $isLoading")
+    Log.d(TAG, "RecordingControl 렌더링 - isRecording: $isRecording, isPaused: $isPaused, connectionState: $connectionState, isLoading: $isLoading")
     
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,

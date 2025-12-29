@@ -183,6 +183,7 @@ fun ProjectDetailScreen(projectId: String) {
                 ProjectDetailActionButtons(
                     onAddWordClick = { showAddWordSheet = true },
                     onAddAiWordClick = { showAiWordGenerationSheet = true },
+                    isAiGenerating = uiState.isAiLoading,
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
@@ -326,10 +327,12 @@ fun ProjectDetailScreen(projectId: String) {
     AiWordGenerationBottomSheet(
         visible = showAiWordGenerationSheet,
         onDismiss = {
-            showAiWordGenerationSheet = false
-            aiWordTopic = ""
-            aiWordCount = ""
-            viewModel.clearAiGeneratedWords()
+            if (!uiState.isAiLoading) {
+                showAiWordGenerationSheet = false
+                aiWordTopic = ""
+                aiWordCount = ""
+                viewModel.clearAiGeneratedWords()
+            }
         },
         topic = aiWordTopic,
         onTopicChange = { aiWordTopic = it },

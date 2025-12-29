@@ -1,7 +1,6 @@
 package com.iamfiro.clari.screen.home
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,9 +26,11 @@ import com.iamfiro.clari.core.ui.component.SectionTitle
 import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.note.component.NewRecordingFloating
 import com.iamfiro.clari.feature.note.component.noteCard.NoteCard
+import com.iamfiro.clari.feature.note.component.noteCard.NoteCardBlack
 import com.iamfiro.clari.feature.note.component.noteCard.NoteCardSkeleton
 import com.iamfiro.clari.feature.project.component.WordCard
 import com.iamfiro.clari.feature.project.component.projectCard.ProjectCard
+import com.iamfiro.clari.feature.project.component.projectCard.ProjectCardBlank
 import com.iamfiro.clari.feature.project.component.projectCard.ProjectCardSkeleton
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,6 +61,9 @@ fun HomeScreen() {
                         if (uiState.isLoading) {
                             NoteCardSkeleton()
                         } else {
+                            if(uiState.notes.isEmpty()) {
+                                NoteCardBlack()
+                            }
                             uiState.notes.take(3).forEach { note ->
                                 NoteCard(note, onClick = { backStack.add(Screen.NoteDetail(note.id)) })
                             }
@@ -74,6 +78,9 @@ fun HomeScreen() {
                         if (uiState.isLoading) {
                             ProjectCardSkeleton()
                         } else {
+                            if(uiState.keywordPacks.isEmpty()) {
+                                ProjectCardBlank(onClick = {backStack.add(Screen.ProjectList)})
+                            }
                             uiState.keywordPacks.take(2).forEach { pack ->
                                 ProjectCard(pack, onClick = { backStack.add(Screen.ProjectDetail(pack.id)) })
                             }
@@ -83,7 +90,9 @@ fun HomeScreen() {
 
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SectionTitle("자주 등장하는 단어")
+                        if(uiState.words.isNotEmpty()) {
+                            SectionTitle("자주 등장하는 단어")
+                        }
 
                         uiState.words.chunked(2).forEach { row ->
                             Row(

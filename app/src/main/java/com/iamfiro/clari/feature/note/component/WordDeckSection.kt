@@ -141,6 +141,7 @@ fun WordDeckSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 8.dp)
+                .height(100.dp)
         ) {
             LazyRow(
                 state = listState,
@@ -213,7 +214,6 @@ private fun DetectedTermCard(
                     onLongClick = onLongPress
                 )
                 .padding(12.dp)
-                .height(60.dp)
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(2.dp)

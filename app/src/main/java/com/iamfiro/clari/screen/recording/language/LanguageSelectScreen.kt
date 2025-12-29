@@ -184,12 +184,14 @@ fun LanguageOptionCard(
                 text = language.displayName,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = if(isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
+                color = if(isSelected) MaterialTheme.colorScheme.onPrimaryContainer 
+                       else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = language.code,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if(isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if(isSelected) MaterialTheme.colorScheme.onPrimaryContainer 
+                       else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

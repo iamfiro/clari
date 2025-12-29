@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "714151798896",
+    "project_id": "clari-app-2c0eb",
+    "storage_bucket": "clari-app-2c0eb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:714151798896:android:4bee89d166eb3263e72cb5",
+        "android_client_info": {
+          "package_name": "com.iamfiro.clari"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBw-QXKbIoQLW_hPm0kzjUn2mS2p9H6V_M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -6,6 +6,7 @@ import com.iamfiro.clari.core.repository.ProjectRepository
 import com.iamfiro.clari.core.ui.BaseViewModel
 import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.feature.project.model.Project
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +30,7 @@ class ProjectListViewModel() : BaseViewModel() {
         observeProjects()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeProjects() {
         _refreshTrigger
             .flatMapLatest {

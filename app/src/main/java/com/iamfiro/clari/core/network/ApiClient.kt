@@ -5,6 +5,7 @@ import android.util.Log
 import com.iamfiro.clari.core.config.ApiConfig
 import com.iamfiro.clari.core.network.api.AuthApi
 import com.iamfiro.clari.core.network.api.ExternalResourceApi
+import com.iamfiro.clari.core.network.api.FcmApi
 import com.iamfiro.clari.core.network.api.ProjectAPI
 import com.iamfiro.clari.core.network.api.NoteApi
 import com.iamfiro.clari.core.network.api.RecordingApi
@@ -45,9 +46,9 @@ object ApiClient {
         val okHttpClient = OkHttpClient.Builder()
             .addInterceptor(AuthInterceptor(tokenManager!!))
             .addInterceptor(loggingInterceptor)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(5, TimeUnit.MINUTES)
+            .readTimeout(5, TimeUnit.MINUTES)
+            .writeTimeout(5, TimeUnit.MINUTES)
             .build()
         
         val contentType = "application/json".toMediaType()
@@ -88,6 +89,10 @@ object ApiClient {
     
     val externalResourceApi: ExternalResourceApi by lazy {
         getRetrofit().create(ExternalResourceApi::class.java)
+    }
+    
+    val fcmApi: FcmApi by lazy {
+        getRetrofit().create(FcmApi::class.java)
     }
 }
 

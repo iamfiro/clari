@@ -2,6 +2,7 @@ package com.iamfiro.clari.feature.project.component
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -40,34 +41,35 @@ fun ProjectDetailWords(
 
         if (words.isEmpty()) {
             Text(
-                "단어가 없습니다",
+                text = "단어가 없습니다",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)
             )
         } else {
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(
-                    start = Dimens.ScreenPadding,
-                    end = Dimens.ScreenPadding,
-                    bottom = 0.dp
-                )
+            BoxWithConstraints(
+                modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)
             ) {
-                words.forEach { word ->
-                    WordCard(
-                        word = word,
-                        modifier = Modifier
-                            .width(160.dp)
-                            .pointerInput(word.name) {
-                                detectTapGestures(
-                                    onLongPress = {
-                                        onWordLongPress(word.name)
-                                    }
-                                )
-                            }
-                    )
+                val spacing = 12.dp
+                val itemWidth = (maxWidth - spacing) / 2 - 2.dp
+
+                FlowRow(
+                    maxItemsInEachRow = 2,
+                    horizontalArrangement = Arrangement.spacedBy(spacing),
+                    verticalArrangement = Arrangement.spacedBy(spacing),
+                ) {
+                    words.forEach { word ->
+                        WordCard(
+                            word = word,
+                            modifier = Modifier
+                                .width(itemWidth)
+                                .pointerInput(word.name) {
+                                    detectTapGestures(
+                                        onLongPress = { onWordLongPress(word.name) }
+                                    )
+                                }
+                        )
+                    }
                 }
             }
         }

@@ -42,7 +42,7 @@ private fun WordCardContent(word: Word, modifier: Modifier = Modifier) {
             .padding(10.dp)
             .height(65.dp)
     ) {
-        Text(word.name, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+        Text(word.name, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         Text(
             word.meaning,
             style = MaterialTheme.typography.labelLarge,

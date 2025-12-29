@@ -24,6 +24,7 @@ fun ProjectDetailHeader(
         Text(
             projectName,
             style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold
         )
         Text(

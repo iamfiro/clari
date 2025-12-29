@@ -68,7 +68,8 @@ fun ProjectDetailActionButtons(
                     .height(60.dp),
                 shape = RoundedCornerShape(9999.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 )
             ) {
                 Text(

@@ -45,6 +45,7 @@ fun NoteDetailContent(
     isLoading: Boolean,
     error: String?,
     onTranscriptClick: (TranscriptLine) -> Unit,
+    onTranscriptLongPress: (TranscriptLine) -> Unit,
     onWordClick: (TranscriptWord) -> Unit,
     linkedProjects: List<LinkedProject> = emptyList(),
     headerHeight: androidx.compose.ui.unit.Dp = 0.dp,
@@ -143,6 +144,7 @@ fun NoteDetailContent(
                         isCurrentlyPlaying = index == currentTranscriptIndex && isPlaying,
                         isHighlighted = index == currentTranscriptIndex,
                         onClick = { onTranscriptClick(transcript) },
+                        onLongPress = { onTranscriptLongPress(transcript) },
                         onWordClick = onWordClick
                     )
                 }

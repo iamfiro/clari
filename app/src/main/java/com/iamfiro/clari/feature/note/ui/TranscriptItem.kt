@@ -3,6 +3,8 @@ package com.iamfiro.clari.feature.note.ui
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -37,6 +39,7 @@ import com.iamfiro.clari.feature.note.model.TranscriptLine
 import com.iamfiro.clari.feature.note.model.TranscriptWord
 import com.iamfiro.clari.util.formatMmSs
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TranscriptItem(
     transcript: TranscriptLine,
@@ -46,6 +49,7 @@ fun TranscriptItem(
     isCurrentlyPlaying: Boolean,
     isHighlighted: Boolean,
     onClick: () -> Unit,
+    onLongPress: () -> Unit,
     onWordClick: (TranscriptWord) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -64,7 +68,10 @@ fun TranscriptItem(
             .fillMaxWidth()
             .background(backgroundColor)
             .padding(horizontal = Dimens.ScreenPadding)
-            .clickable { onClick() }
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongPress
+            )
             .padding(vertical = 12.dp)
     ) {
         SpeakerAvatar(speaker = transcript.speaker,)

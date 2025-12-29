@@ -30,6 +30,7 @@ import com.iamfiro.clari.feature.note.component.WordDetailModal
 import com.iamfiro.clari.feature.note.ui.AudioControlSection
 import com.iamfiro.clari.feature.note.ui.NoteDetailContent
 import com.iamfiro.clari.feature.note.ui.NoteDetailHeader
+import com.iamfiro.clari.feature.note.ui.TranscriptExplanationDialog
 
 @Composable
 fun NoteDetailScreen(
@@ -64,6 +65,9 @@ fun NoteDetailScreen(
                 error = uiState.error,
                 onTranscriptClick = { transcript -> 
                     viewModel.onTranscriptClicked(transcript)
+                },
+                onTranscriptLongPress = { transcript ->
+                    viewModel.explainTranscript(transcript.text)
                 },
                 onWordClick = { word ->
                     viewModel.onWordClicked(word)
@@ -154,6 +158,14 @@ fun NoteDetailScreen(
                 showWordDetailModal = false
                 selectedTerm = null
             }
+        )
+        
+        TranscriptExplanationDialog(
+            visible = uiState.showTranscriptExplanation,
+            transcriptText = uiState.selectedTranscriptText,
+            explanation = uiState.transcriptExplanation,
+            isLoading = uiState.isLoadingExplanation,
+            onDismiss = { viewModel.dismissTranscriptExplanation() }
         )
     }
 }

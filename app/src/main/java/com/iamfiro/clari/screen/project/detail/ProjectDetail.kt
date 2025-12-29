@@ -352,6 +352,7 @@ fun ProjectDetailScreen(projectId: String) {
                 showAiWordGenerationSheet = false
                 aiWordTopic = ""
                 aiWordCount = ""
+                viewModel.clearAiGeneratedWords()
             }
         }
     )

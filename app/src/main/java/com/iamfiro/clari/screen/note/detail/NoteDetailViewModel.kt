@@ -28,6 +28,7 @@ class NoteDetailViewModel(
 ) : ViewModel() {
     private val noteRepository = NoteRepository.getInstance()
     private val projectRepository = ProjectRepository.getInstance()
+    private val aiExplanationRepository = com.iamfiro.clari.core.repository.AiExplanationRepository.getInstance()
     private val _uiState = MutableStateFlow(NoteDetailUiState())
     val uiState: StateFlow<NoteDetailUiState> = _uiState.asStateFlow()
 
@@ -409,6 +410,41 @@ class NoteDetailViewModel(
                 Log.e(TAG, "MediaPlayer 해제 중 오류", e)
             }
         }
+    }
+
+    // AI Transcript Explanation
+    fun explainTranscript(transcriptText: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                showTranscriptExplanation = true,
+                selectedTranscriptText = transcriptText,
+                transcriptExplanation = null,
+                isLoadingExplanation = true
+            )
+            
+            try {
+                val explanation = aiExplanationRepository.explainTranscript(transcriptText)
+                _uiState.value = _uiState.value.copy(
+                    transcriptExplanation = explanation,
+                    isLoadingExplanation = false
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "AI 설명 생성 실패", e)
+                _uiState.value = _uiState.value.copy(
+                    transcriptExplanation = "설명을 생성하는 중 오류가 발생했습니다.",
+                    isLoadingExplanation = false
+                )
+            }
+        }
+    }
+    
+    fun dismissTranscriptExplanation() {
+        _uiState.value = _uiState.value.copy(
+            showTranscriptExplanation = false,
+            selectedTranscriptText = "",
+            transcriptExplanation = null,
+            isLoadingExplanation = false
+        )
     }
 
     override fun onCleared() {

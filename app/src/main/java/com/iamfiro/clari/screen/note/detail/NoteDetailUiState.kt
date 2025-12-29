@@ -25,5 +25,11 @@ data class NoteDetailUiState(
     val displayedTerms: List<DetectedTerm> = emptyList(),
 
     val shouldTriggerHaptic: Boolean = false,
-    val isLoadingKeywords: Boolean = false
+    val isLoadingKeywords: Boolean = false,
+    
+    // AI Transcript Explanation
+    val showTranscriptExplanation: Boolean = false,
+    val selectedTranscriptText: String = "",
+    val transcriptExplanation: String? = null,
+    val isLoadingExplanation: Boolean = false
 )

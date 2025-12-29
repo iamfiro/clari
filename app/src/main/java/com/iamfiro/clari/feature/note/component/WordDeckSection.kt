@@ -11,6 +11,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,6 +66,7 @@ fun WordDeckSection(
     shouldTriggerHaptic: Boolean = false,
     onHapticTriggered: () -> Unit = {},
     onCardClick: (DetectedTerm) -> Unit = {},
+    onCardLongPress: (DetectedTerm) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -154,6 +156,7 @@ fun WordDeckSection(
                     DetectedTermCard(
                         term = term,
                         onClick = { onCardClick(term) },
+                        onLongPress = { onCardLongPress(term) },
                         modifier = Modifier
                             .width(cardWidth)
                             .animateItem(
@@ -174,6 +177,7 @@ fun WordDeckSection(
 private fun DetectedTermCard(
     term: DetectedTerm,
     onClick: () -> Unit,
+    onLongPress: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isVisible by remember { mutableStateOf(false) }
@@ -204,6 +208,10 @@ private fun DetectedTermCard(
                 )
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surface)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongPress
+                )
                 .padding(12.dp)
                 .height(60.dp)
         ) {

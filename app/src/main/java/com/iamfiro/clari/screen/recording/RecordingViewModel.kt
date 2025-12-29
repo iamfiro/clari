@@ -37,6 +37,7 @@ class RecordingViewModel(
     
     private val recordingSessionService = RecordingSessionService(ApiClient.getTokenManager())
     private val audioRecorderService = AudioRecorderService(context)
+    private val projectRepository = com.iamfiro.clari.core.repository.ProjectRepository.getInstance()
 
     val connectionState: StateFlow<SessionConnectionState> = recordingSessionService.connectionState
 
@@ -55,6 +56,9 @@ class RecordingViewModel(
 
     private val _detectedKeywords = MutableStateFlow<List<KeywordHit>>(emptyList())
     val detectedKeywords: StateFlow<List<KeywordHit>> = _detectedKeywords.asStateFlow()
+
+    private val _availableKeywords = MutableStateFlow<Map<String, DetectedTerm>>(emptyMap())
+    private val triggeredTermIds = mutableSetOf<String>()
 
     private val wordDeckState = WordDeckState()
     val detectedTerms: StateFlow<List<DetectedTerm>> = wordDeckState.terms
@@ -77,13 +81,16 @@ class RecordingViewModel(
     
     private var timerJob: Job? = null
     private var itemIdCounter = 0
-    private var keywordDismissJob: Job? = null
 
     init {
         Log.d(TAG, "========== RecordingViewModel 초기화 ==========")
         Log.d(TAG, "Language: $languageCode")
         Log.d(TAG, "KeywordPacks: $keywordPackIds")
         Log.d(TAG, "ExternalResources: $externalResourceIds")
+
+        if (keywordPackIds.isNotEmpty()) {
+            loadAvailableKeywords(keywordPackIds)
+        }
 
         viewModelScope.launch {
             audioRecorderService.audioChunks.collect { base64Audio ->
@@ -100,6 +107,8 @@ class RecordingViewModel(
                     isFormatted = false
                 )
                 _transcriptItems.value = _transcriptItems.value + newItem
+
+                checkAndAddKeywords(text)
             }
         }
 
@@ -114,27 +123,6 @@ class RecordingViewModel(
                         isFormatted = true
                     )
                     _transcriptItems.value = currentItems
-                }
-            }
-        }
-
-        viewModelScope.launch {
-            recordingSessionService.detectedKeywords.collect { newKeywords ->
-                val currentKeywords = _detectedKeywords.value
-                
-                // 키워드 리스트가 변경된 경우
-                if (newKeywords != currentKeywords) {
-                    _detectedKeywords.value = newKeywords
-                    
-                    if (newKeywords.isEmpty()) {
-                        keywordDismissJob?.cancel()
-                    } else if (newKeywords.size > currentKeywords.size || currentKeywords.isEmpty()) {
-                        startKeywordDismissTimer()
-                    }
-                }
-
-                newKeywords.forEach { keyword ->
-                    wordDeckState.onTermDetected(keyword)
                 }
             }
         }
@@ -239,7 +227,7 @@ class RecordingViewModel(
                     .onSuccess { response ->
                         Log.d(TAG, "세션 중지 성공: ${response.message}")
                         recordingSessionService.disconnect()
-                        // 상태 초기화
+
                         resetRecordingState()
                         onComplete?.invoke(savedNoteId)
                     }
@@ -247,14 +235,14 @@ class RecordingViewModel(
                         Log.e(TAG, "세션 중지 실패", e)
                         _error.value = "녹음 저장 실패: ${e.message}"
                         recordingSessionService.disconnect()
-                        // 상태 초기화
+
                         resetRecordingState()
                         onComplete?.invoke(null)
                     }
             }
         } else {
             recordingSessionService.disconnect()
-            // 상태 초기화
+
             resetRecordingState()
             onComplete?.invoke(null)
         }
@@ -331,25 +319,6 @@ class RecordingViewModel(
         return "%02d:%02d".format(minutes, secs)
     }
 
-    private fun startKeywordDismissTimer() {
-        keywordDismissJob?.cancel()
-        keywordDismissJob = viewModelScope.launch {
-            while (_detectedKeywords.value.isNotEmpty()) {
-                delay(5000)
-
-                val currentKeywords = _detectedKeywords.value
-                if (currentKeywords.isNotEmpty()) {
-                    val updatedKeywords = currentKeywords.dropLast(1)
-                    _detectedKeywords.value = updatedKeywords
-
-                    if (updatedKeywords.isNotEmpty()) {
-                        // 다음 카드의 타이머는 이미 시작됨 (while 루프가 계속됨)
-                    }
-                }
-            }
-        }
-    }
-
     fun resetRecordingState() {
         Log.d(TAG, "========== 녹음 상태 초기화 ==========")
         
@@ -369,8 +338,79 @@ class RecordingViewModel(
         itemIdCounter = 0
 
         wordDeckState.clear()
+        triggeredTermIds.clear()
         
         Log.d(TAG, "✅ 상태 초기화 완료 - 다시 녹음 가능")
+    }
+    
+    private fun loadAvailableKeywords(keywordPackIds: List<String>) {
+        viewModelScope.launch {
+            try {
+                val keywordMap = mutableMapOf<String, DetectedTerm>()
+                
+                keywordPackIds.forEach { packId ->
+                    projectRepository.getKeywordPackById(packId)
+                        .onSuccess { pack ->
+                            pack.word.forEach { word ->
+                                val normalizedName = word.name.lowercase().trim()
+                                if (!keywordMap.containsKey(normalizedName)) {
+                                    keywordMap[normalizedName] = DetectedTerm(
+                                        id = normalizedName,
+                                        keyword = KeywordHit(
+                                            name = word.name,
+                                            description = word.meaning
+                                        ),
+                                        detectedAt = 0L
+                                    )
+                                }
+                            }
+                        }
+                }
+                
+                _availableKeywords.value = keywordMap
+                Log.d(TAG, "키워드 ${keywordMap.size}개 로드 완료")
+            } catch (e: Exception) {
+                Log.e(TAG, "키워드 로드 실패", e)
+            }
+        }
+    }
+    
+    private fun checkAndAddKeywords(text: String) {
+        val normalizedText = text.lowercase().trim()
+        val textWithoutSpaces = normalizedText.replace("\\s+".toRegex(), "")
+        
+        _availableKeywords.value.forEach { (keywordKey, term) ->
+            val keywordWithoutSpaces = keywordKey.replace("\\s+".toRegex(), "")
+
+            val exactMatch = normalizedText.contains(keywordKey)
+
+            val spaceIgnoredMatch = textWithoutSpaces.contains(keywordWithoutSpaces)
+
+            val words = keywordKey.split("\\s+".toRegex())
+            val partialMatch = if (words.size > 1) {
+                words.all { word -> normalizedText.contains(word) }
+            } else {
+                false
+            }
+            
+            if (exactMatch || spaceIgnoredMatch || partialMatch) {
+                addTermToDisplay(term)
+                Log.d(TAG, "키워드 매칭: '${term.keyword.name}' (텍스트: '$text', 정확:$exactMatch, 띄어쓰기무시:$spaceIgnoredMatch, 부분:$partialMatch)")
+            }
+        }
+    }
+    
+    private fun addTermToDisplay(term: DetectedTerm) {
+        val isNewTerm = !triggeredTermIds.contains(term.id)
+        
+        if (isNewTerm) {
+            triggeredTermIds.add(term.id)
+        }
+        
+        val updatedTerm = term.copy(detectedAt = System.currentTimeMillis())
+        wordDeckState.onTermDetected(updatedTerm.keyword)
+        
+        Log.d(TAG, "키워드 감지: ${term.keyword.name}, 새 키워드: $isNewTerm")
     }
     
     override fun onCleared() {

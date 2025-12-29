@@ -3,13 +3,16 @@ package com.iamfiro.clari.screen.project.list
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,6 +33,7 @@ import com.iamfiro.clari.feature.project.component.NewProjectFloatingButton
 import com.iamfiro.clari.feature.project.component.projectCard.ProjectCard
 import com.iamfiro.clari.feature.project.component.projectCard.ProjectCardSkeleton
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectListScreen() {
     val viewModel: ProjectListViewModel = viewModel()
@@ -49,18 +53,24 @@ fun ProjectListScreen() {
             Column(Modifier.padding(innerPadding)) {
                 Header("프로젝트")
 
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = 6.dp)
+                PullToRefreshBox(
+                    isRefreshing = uiState.isLoading,
+                    onRefresh = { viewModel.refresh() },
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    if (uiState.isLoading) {
-                        item { ProjectCardSkeleton() }
-                    } else {
-                        items(
-                            items = uiState.projects,
-                            key = { it.id }
-                        ) { project ->
-                            ProjectCard(project, onClick = { viewModel.openProject(project.id) })
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = 6.dp)
+                    ) {
+                        if (uiState.isLoading) {
+                            item { ProjectCardSkeleton() }
+                        } else {
+                            items(
+                                items = uiState.projects,
+                                key = { it.id }
+                            ) { project ->
+                                ProjectCard(project, onClick = { viewModel.openProject(project.id) })
+                            }
                         }
                     }
                 }

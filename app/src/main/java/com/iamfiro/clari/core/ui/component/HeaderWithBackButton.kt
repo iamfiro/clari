@@ -19,10 +19,21 @@ import com.iamfiro.clari.R
 import com.iamfiro.clari.core.ui.theme.Dimens
 
 @Composable
-fun HeaderWithBackButton(text: String) {
+fun HeaderWithBackButton(
+    text: String,
+    onBackClick: (() -> Unit)? = null
+) {
+    val backStack = com.iamfiro.clari.core.ui.LocalNavBackStack.current
+    
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)) {
         IconButton(
-            onClick = {},
+            onClick = { 
+                if (onBackClick != null) {
+                    onBackClick()
+                } else {
+                    backStack.removeLastOrNull()
+                }
+            },
             modifier = Modifier.offset(x = (-14).dp),
         ) {
             Icon(

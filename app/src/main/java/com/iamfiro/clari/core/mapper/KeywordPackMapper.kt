@@ -25,7 +25,8 @@ object KeywordPackMapper {
             word = words,
             isDownloaded = true,
             downloadCount = 0,
-            connector = null
+            connector = null,
+            isPublic = dto.isPublic
         )
     }
     fun keywordToWord(dto: ProjectWordDTO): Word {

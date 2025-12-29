@@ -7,5 +7,7 @@ data class ProjectDetailUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val aiSuggestions: List<String> = emptyList(),
-    val isAiLoading: Boolean = false
+    val isAiLoading: Boolean = false,
+    val isAddingConnector: Boolean = false,
+    val aiGeneratedWords: List<com.iamfiro.clari.feature.project.model.Word> = emptyList()
 )

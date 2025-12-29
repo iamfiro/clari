@@ -1,15 +1,19 @@
 package com.iamfiro.clari.feature.project.component
 
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.speech.RecognizerIntent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,16 +33,31 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
+import coil.size.Size
 import com.iamfiro.clari.R
+import com.iamfiro.clari.core.ui.component.BottomSheet
+import kotlinx.coroutines.launch
 import com.iamfiro.clari.core.ui.component.BottomSheetAction
+import com.iamfiro.clari.core.ui.component.BottomSheetConfig
 import com.iamfiro.clari.core.ui.component.BottomSheetWithHeader
 import com.iamfiro.clari.core.ui.component.ConfirmBottomSheet
 import com.iamfiro.clari.feature.project.model.ProjectConnector
@@ -54,7 +74,8 @@ fun AddWordBottomSheet(
     onAdd: () -> Unit,
     aiSuggestions: List<String> = emptyList(),
     isAiLoading: Boolean = false,
-    onGetAiSuggestions: ((String) -> Unit)? = null
+    onGetAiSuggestions: ((String) -> Unit)? = null,
+    onGenerateDescription: (suspend (String) -> Result<List<String>>)? = null
 ) {
     BottomSheetWithHeader(
         visible = visible,
@@ -96,37 +117,13 @@ fun AddWordBottomSheet(
                 }
             }
         )
-        
-        // AI 제안 표시
-        if (aiSuggestions.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "AI 추천 설명",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                aiSuggestions.forEach { suggestion ->
-                    Text(
-                        text = suggestion,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                            .clickable { onWordMeaningChange(suggestion) }
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    )
-                }
-            }
-        }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         OutlinedTextField(
             value = wordMeaning,
             onValueChange = onWordMeaningChange,
@@ -134,6 +131,126 @@ fun AddWordBottomSheet(
             modifier = Modifier.fillMaxWidth(),
             singleLine = false
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        var generatedSuggestions by remember { mutableStateOf<List<String>>(emptyList()) }
+        val speechRecognizerLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            val resultCode = result.resultCode
+            val data = result.data
+            
+            if (resultCode == android.app.Activity.RESULT_OK && data != null) {
+                val results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                results?.firstOrNull()?.let { recognizedText ->
+                    onWordMeaningChange(recognizedText)
+                }
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Button(
+                onClick = {
+                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
+                        putExtra(RecognizerIntent.EXTRA_PROMPT, "단어 뜻을 말씀해주세요")
+                    }
+
+                    if (intent.resolveActivity(context.packageManager) != null) {
+                        speechRecognizerLauncher.launch(intent)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(painter = painterResource(R.drawable.mic), "", modifier = Modifier.size(16.dp))
+                    Text("음성 인식", fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Button(
+                onClick = {
+                    if (wordName.isBlank()) {
+                        Toast.makeText(context, "단어 이름을 입력해주세요", Toast.LENGTH_SHORT).show()
+                    } else if (onGenerateDescription != null) {
+                        scope.launch {
+                            onGenerateDescription(wordName)
+                                .onSuccess { suggestions ->
+                                    generatedSuggestions = suggestions
+                                }
+                                .onFailure {
+                                    Toast.makeText(context, "AI 생성에 실패했습니다", Toast.LENGTH_SHORT).show()
+                                    generatedSuggestions = emptyList()
+                                }
+                        }
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                enabled = onGenerateDescription != null && !isAiLoading
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (isAiLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(painter = painterResource(R.drawable.sparkles), "", modifier = Modifier.size(16.dp))
+                    }
+                    Text("AI 생성", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        if (generatedSuggestions.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                "AI 생성 결과 (선택하세요)",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                generatedSuggestions.forEachIndexed { index, suggestion ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                            .clickable {
+                                onWordMeaningChange(suggestion)
+                                generatedSuggestions = emptyList()
+                            }
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = suggestion,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -184,6 +301,7 @@ fun AddConnectorBottomSheet(
     onSelectedConnectorTypeChange: (ProjectConnectorType?) -> Unit,
     onConnectorNameChange: (String) -> Unit,
     onConnectorUrlChange: (String) -> Unit,
+    isAdding: Boolean = false,
     onAdd: () -> Unit
 ) {
     BottomSheetWithHeader(
@@ -192,8 +310,8 @@ fun AddConnectorBottomSheet(
         title = "외부 연결 추가",
         actions = listOf(
             BottomSheetAction.Primary(
-                text = "추가",
-                enabled = selectedConnectorType != null && connectorName.isNotBlank() && connectorUrl.isNotBlank(),
+                text = if (isAdding) "추가 중..." else "추가",
+                enabled = selectedConnectorType != null && connectorName.isNotBlank() && connectorUrl.isNotBlank() && !isAdding,
                 onClick = onAdd
             )
         )
@@ -502,6 +620,204 @@ fun AiAutofillBottomSheet(
                             color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AiWordGenerationBottomSheet(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    topic: String,
+    onTopicChange: (String) -> Unit,
+    count: String,
+    onCountChange: (String) -> Unit,
+    isGenerating: Boolean,
+    generatedWords: List<com.iamfiro.clari.feature.project.model.Word>,
+    onGenerate: () -> Unit,
+    onDeleteWord: (com.iamfiro.clari.feature.project.model.Word) -> Unit,
+    onAddWords: () -> Unit
+) {
+    if (isGenerating) {
+        BottomSheet(
+            visible = visible,
+            onDismiss = { /* 생성 중엔 닫기 불가 */ },
+            config = BottomSheetConfig(
+                dismissOnBackdropClick = false,
+                enableSwipeToDismiss = false
+            )
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 40.dp)
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(48.dp))
+                Spacer(Modifier.height(24.dp))
+                Text(
+                    "단어를 생성중이에요...",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "약 1분 소요",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+            Spacer(Modifier.height(40.dp))
+        }
+    } else if (generatedWords.isNotEmpty()) {
+        BottomSheetWithHeader(
+            visible = visible,
+            onDismiss = onDismiss,
+            title = "${generatedWords.size}개의 단어가 생성되었습니다",
+            actions = listOf(
+                BottomSheetAction.Primary(
+                    text = "단어 추가하기",
+                    onClick = onAddWords
+                )
+            )
+        ) {
+            androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(400.dp)
+            ) {
+                items(generatedWords.size) { index ->
+                    val word = generatedWords[index]
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = word.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = word.meaning,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.secondary,
+                                maxLines = 4,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        
+                        OutlinedButton(
+                            onClick = { onDeleteWord(word) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(36.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                "삭제",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        BottomSheetWithHeader(
+            visible = visible,
+            onDismiss = onDismiss,
+            title = "AI 단어 추가",
+            actions = listOf(
+                BottomSheetAction.Primary(
+                    text = "생성하기",
+                    enabled = topic.isNotBlank() && count.isNotBlank(),
+                    onClick = onGenerate
+                )
+            )
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = topic,
+                    onValueChange = onTopicChange,
+                    label = { Text("주제를 입력해주세요") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        "생성 단어 개수",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                val currentCount = count.toIntOrNull() ?: 0
+                                if (currentCount > 1) {
+                                    onCountChange((currentCount - 1).toString())
+                                }
+                            },
+                            modifier = Modifier.size(56.dp),
+                            shape = RoundedCornerShape(28.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.minus),
+                                contentDescription = "감소",
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        
+                        Text(
+                            text = count.ifBlank { "0" },
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center
+                        )
+                        
+                        OutlinedButton(
+                            onClick = {
+                                val currentCount = count.toIntOrNull() ?: 0
+                                onCountChange((currentCount + 1).toString())
+                            },
+                            modifier = Modifier.size(56.dp),
+                            shape = RoundedCornerShape(28.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.plus),
+                                contentDescription = "증가",
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
             }

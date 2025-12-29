@@ -33,10 +33,12 @@ import com.iamfiro.clari.core.service.SessionConnectionState
 import com.iamfiro.clari.core.ui.LocalNavBackStack
 import com.iamfiro.clari.core.ui.Screen
 import com.iamfiro.clari.core.ui.component.ConfirmBottomSheet
+import com.iamfiro.clari.feature.note.component.DetectedTerm
 import com.iamfiro.clari.feature.note.component.RecordingControl
 import com.iamfiro.clari.feature.note.component.RecordingHeader
 import com.iamfiro.clari.feature.note.component.TranscribeContainer
 import com.iamfiro.clari.feature.note.component.WordDeckSection
+import com.iamfiro.clari.feature.note.component.WordDetailModal
 import kotlinx.coroutines.launch
 
 private const val TAG = "RecordingScreen"
@@ -57,8 +59,11 @@ fun RecordingScreen(
     var showConfirmBottomSheet by remember { mutableStateOf(false) }
     var showCancelBottomSheet by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
+    var showWordDetailModal by remember { mutableStateOf(false) }
+    var selectedTerm by remember { mutableStateOf<DetectedTerm?>(null) }
 
     val viewModel: RecordingViewModel = viewModel(
+        key = "$projectId-$languageCode-${keywordPackIds.joinToString()}",
         factory = RecordingViewModelFactory(
             context.applicationContext,
             recordingRepository,
@@ -78,6 +83,13 @@ fun RecordingScreen(
     val detectedTerms by viewModel.detectedTerms.collectAsState()
     val shouldTriggerHaptic by viewModel.shouldTriggerHaptic.collectAsState()
     val error by viewModel.error.collectAsState()
+
+    DisposableEffect(languageCode) {
+        Log.d(TAG, "========== RecordingScreen 진입 (language: $languageCode) ==========")
+        onDispose {
+            Log.d(TAG, "========== RecordingScreen 종료 (language: $languageCode) ==========")
+        }
+    }
 
     var hasPermission by remember {
         val granted = ContextCompat.checkSelfPermission(
@@ -183,6 +195,10 @@ fun RecordingScreen(
                     onHapticTriggered = { viewModel.onHapticTriggered() },
                     onCardClick = { term ->
                         Log.d(TAG, "탐지된 용어 클릭: ${term.keyword.name}")
+                    },
+                    onCardLongPress = { term ->
+                        selectedTerm = term
+                        showWordDetailModal = true
                     }
                 )
                 
@@ -207,7 +223,12 @@ fun RecordingScreen(
                                 isSaving = false
                                 if (noteId != null) {
                                     Log.d(TAG, "녹음 저장 완료, NoteDetail로 이동: $noteId")
-                                    backStack.removeLastOrNull()
+                                    // 녹음 관련 화면들을 모두 제거하고 Home만 남긴 후 NoteDetail로 이동
+                                    // backstack: Home -> BeforeRecording -> LanguageSelect -> Recording
+                                    // 목표: Home -> NoteDetail
+                                    while (backStack.size > 1) {
+                                        backStack.removeLastOrNull()
+                                    }
                                     backStack.add(Screen.NoteDetail(noteId))
                                 } else {
                                     Log.e(TAG, "녹음 저장 실패")
@@ -237,7 +258,10 @@ fun RecordingScreen(
                     isSaving = false
                     if (noteId != null) {
                         Log.d(TAG, "녹음 저장 완료, NoteDetail로 이동: $noteId")
-                        backStack.removeLastOrNull()
+                        // 녹음 관련 화면들을 모두 제거하고 Home만 남긴 후 NoteDetail로 이동
+                        while (backStack.size > 1) {
+                            backStack.removeLastOrNull()
+                        }
                         backStack.add(Screen.NoteDetail(noteId))
                     } else {
                         Log.e(TAG, "녹음 저장 실패")
@@ -266,6 +290,15 @@ fun RecordingScreen(
             },
             onCancel = {
                 showCancelBottomSheet = false
+            }
+        )
+        
+        WordDetailModal(
+            visible = showWordDetailModal,
+            term = selectedTerm,
+            onDismiss = {
+                showWordDetailModal = false
+                selectedTerm = null
             }
         )
     }

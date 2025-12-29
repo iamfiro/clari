@@ -122,7 +122,13 @@ class ProjectRepository {
         return try {
             val currentPack = getKeywordPackById(packId).getOrThrow()
             val updatedWords = currentPack.word.filter { it.name != wordName }
-            updateProject(packId, keywords = updatedWords)
+            updateProject(
+                packId = packId,
+                name = currentPack.name,
+                keywords = updatedWords,
+                isPublic = currentPack.isPublic,
+                previewImageUrl = currentPack.thumbnail
+            )
         } catch (e: Exception) {
             Result.failure(e)
         }

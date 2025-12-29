@@ -4,6 +4,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.iamfiro.clari.core.repository.ExternalResourceRepository
 import com.iamfiro.clari.core.repository.ProjectRepository
 import com.iamfiro.clari.feature.project.model.Project
 import com.iamfiro.clari.feature.project.model.ProjectConnector
@@ -20,6 +21,8 @@ class ProjectDetailViewModel(
     private val projectRepository: ProjectRepository,
     private val projectId: String
 ) : ViewModel() {
+    
+    private val externalResourceRepository = ExternalResourceRepository.getInstance()
 
     private val _uiState = MutableStateFlow(ProjectDetailUiState())
     val uiState: StateFlow<ProjectDetailUiState> = _uiState.asStateFlow()
@@ -109,7 +112,14 @@ class ProjectDetailViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(error = null)
             
-            projectRepository.updateProject(projectId, name = newName)
+            val currentProject = _uiState.value.project ?: return@launch
+            projectRepository.updateProject(
+                packId = projectId,
+                name = newName,
+                keywords = currentProject.word,
+                isPublic = currentProject.isPublic,
+                previewImageUrl = currentProject.thumbnail
+            )
                 .onSuccess { pack ->
                     Log.d(TAG, "프로젝트 이름 변경 완료: $newName")
                     _uiState.value = _uiState.value.copy(
@@ -130,9 +140,13 @@ class ProjectDetailViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(error = null)
             
-            // 이미지 URL을 previewImageUrl로 업데이트
+            val currentProject = _uiState.value.project ?: return@launch
+
             projectRepository.updateProject(
-                projectId, 
+                packId = projectId,
+                name = currentProject.name,
+                keywords = currentProject.word,
+                isPublic = currentProject.isPublic,
                 previewImageUrl = uri.toString()
             )
                 .onSuccess { pack ->
@@ -169,14 +183,35 @@ class ProjectDetailViewModel(
         }
     }
 
-    // Connector 관련 (로컬 상태만 관리 - API에서는 지원하지 않음)
     fun addConnector(type: ProjectConnectorType, name: String, url: String) {
-        val currentProject = _uiState.value.project ?: return
-        val connector = ProjectConnector(type = type, name = name, url = url)
-        val updatedConnectors = (currentProject.connector ?: emptyList()) + connector
-        _uiState.value = _uiState.value.copy(
-            project = currentProject.copy(connector = updatedConnectors)
-        )
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(error = null, isAddingConnector = true)
+
+            externalResourceRepository.createResource(url)
+                .onSuccess { resource ->
+                    Log.d(TAG, "외부 리소스 생성 완료: id=${resource.id}, title=${resource.title}")
+
+                    val currentProject = _uiState.value.project ?: return@onSuccess
+                    val connector = ProjectConnector(
+                        type = type, 
+                        name = name,
+                        url = url
+                    )
+                    val updatedConnectors = (currentProject.connector ?: emptyList()) + connector
+
+                    _uiState.value = _uiState.value.copy(
+                        project = currentProject.copy(connector = updatedConnectors),
+                        isAddingConnector = false
+                    )
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "외부 리소스 생성 실패", e)
+                    _uiState.value = _uiState.value.copy(
+                        error = "외부 연결 추가에 실패했습니다: ${e.message}",
+                        isAddingConnector = false
+                    )
+                }
+        }
     }
 
     fun updateConnector(oldConnector: ProjectConnector, newConnector: ProjectConnector) {
@@ -204,15 +239,9 @@ class ProjectDetailViewModel(
     }
 
     suspend fun getShareLink(): String {
-        // 공유 링크 생성 (실제 API 없으므로 임시 URL 반환)
         return "https://clari.app/share/pack/$projectId"
     }
 
-    // AI 기능
-
-    /**
-     * 키워드 이름으로 설명 자동완성 제안 받기
-     */
     fun getAiSuggestions(keywordName: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
@@ -242,9 +271,6 @@ class ProjectDetailViewModel(
         _uiState.value = _uiState.value.copy(aiSuggestions = emptyList())
     }
 
-    /**
-     * AI 자동채우기 - 쿼리로 키워드 목록 생성
-     */
     fun aiAutofill(query: String, count: Int = 50, onComplete: (List<Word>) -> Unit) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isAiLoading = true)
@@ -266,9 +292,6 @@ class ProjectDetailViewModel(
         }
     }
 
-    /**
-     * AI 생성 키워드들을 프로젝트에 추가
-     */
     fun addWordsFromAi(words: List<Word>) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(error = null)
@@ -276,7 +299,13 @@ class ProjectDetailViewModel(
             val currentProject = _uiState.value.project ?: return@launch
             val updatedWords = currentProject.word + words
             
-            projectRepository.updateProject(projectId, keywords = updatedWords)
+            projectRepository.updateProject(
+                packId = projectId,
+                name = currentProject.name,
+                keywords = updatedWords,
+                isPublic = currentProject.isPublic,
+                previewImageUrl = currentProject.thumbnail
+            )
                 .onSuccess { pack ->
                     Log.d(TAG, "${words.size}개 키워드 일괄 추가 완료, words=${pack.word.size}")
                     _uiState.value = _uiState.value.copy(
@@ -291,5 +320,78 @@ class ProjectDetailViewModel(
                     )
                 }
         }
+    }
+
+    fun generateAiWords(topic: String, count: Int) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isAiLoading = true,
+                aiGeneratedWords = emptyList()
+            )
+            
+            projectRepository.generateAutofill(topic, count)
+                .onSuccess { words ->
+                    Log.d(TAG, "AI 단어 생성 완료: ${words.size}개")
+                    _uiState.value = _uiState.value.copy(
+                        aiGeneratedWords = words,
+                        isAiLoading = false,
+                        error = null
+                    )
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "AI 단어 생성 실패", e)
+                    _uiState.value = _uiState.value.copy(
+                        error = "AI 단어 생성에 실패했습니다",
+                        isAiLoading = false
+                    )
+                }
+        }
+    }
+
+    fun removeAiGeneratedWord(word: Word) {
+        val currentWords = _uiState.value.aiGeneratedWords
+        _uiState.value = _uiState.value.copy(
+            aiGeneratedWords = currentWords.filter { it != word }
+        )
+    }
+
+    fun addAiGeneratedWordsToProject(onComplete: () -> Unit) {
+        viewModelScope.launch {
+            val wordsToAdd = _uiState.value.aiGeneratedWords
+            if (wordsToAdd.isEmpty()) {
+                onComplete()
+                return@launch
+            }
+
+            val currentProject = _uiState.value.project ?: return@launch
+            val updatedWords = currentProject.word + wordsToAdd
+            
+            projectRepository.updateProject(
+                packId = projectId,
+                name = currentProject.name,
+                keywords = updatedWords,
+                isPublic = currentProject.isPublic,
+                previewImageUrl = currentProject.thumbnail
+            )
+                .onSuccess { pack ->
+                    Log.d(TAG, "${wordsToAdd.size}개 단어 추가 완료")
+                    _uiState.value = _uiState.value.copy(
+                        project = pack,
+                        aiGeneratedWords = emptyList(),
+                        error = null
+                    )
+                    onComplete()
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "단어 추가 실패", e)
+                    _uiState.value = _uiState.value.copy(
+                        error = "단어 추가에 실패했습니다"
+                    )
+                }
+        }
+    }
+
+    fun clearAiGeneratedWords() {
+        _uiState.value = _uiState.value.copy(aiGeneratedWords = emptyList())
     }
 }

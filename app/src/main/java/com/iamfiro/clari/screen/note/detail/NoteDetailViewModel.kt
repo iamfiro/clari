@@ -179,10 +179,25 @@ class NoteDetailViewModel(
 
     private fun checkAndAddKeyword(wordText: String) {
         val normalizedWord = wordText.lowercase().trim()
+        val wordWithoutSpaces = normalizedWord.replace("\\s+".toRegex(), "")
 
         _uiState.value.availableKeywords.forEach { (keywordKey, term) ->
-            if (normalizedWord.contains(keywordKey)) {
+            val keywordWithoutSpaces = keywordKey.replace("\\s+".toRegex(), "")
+
+            val exactMatch = normalizedWord.contains(keywordKey)
+
+            val spaceIgnoredMatch = wordWithoutSpaces.contains(keywordWithoutSpaces)
+
+            val words = keywordKey.split("\\s+".toRegex())
+            val partialMatch = if (words.size > 1) {
+                words.all { word -> normalizedWord.contains(word) }
+            } else {
+                false
+            }
+            
+            if (exactMatch || spaceIgnoredMatch || partialMatch) {
                 addTermToDisplay(term)
+                Log.d(TAG, "키워드 매칭: '${term.keyword.name}' (텍스트: '$wordText', 정확:$exactMatch, 띄어쓰기무시:$spaceIgnoredMatch, 부분:$partialMatch)")
             }
         }
     }

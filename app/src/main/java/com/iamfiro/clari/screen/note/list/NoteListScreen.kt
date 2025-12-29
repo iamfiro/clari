@@ -6,14 +6,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -31,7 +34,7 @@ import com.iamfiro.clari.feature.note.component.noteCard.NoteCardSkeleton
 import com.iamfiro.clari.util.getTodayDateTime
 import com.iamfiro.clari.util.toRelativeDateLabel
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun NoteListScreen() {
     val backStack = LocalNavBackStack.current
@@ -51,13 +54,18 @@ fun NoteListScreen() {
     ) { innerPadding ->
         Column(Modifier.padding(innerPadding)) {
             Header("노트")
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(
-                    horizontal = Dimens.ScreenPadding,
-                    vertical = 8.dp
-                )
+            PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.refresh() },
+                modifier = Modifier.fillMaxSize()
             ) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(
+                        horizontal = Dimens.ScreenPadding,
+                        vertical = 8.dp
+                    )
+                ) {
                 if (isLoading) {
                     item { NoteCardSkeleton() }
                 } else {
@@ -94,6 +102,7 @@ fun NoteListScreen() {
 
                 item {
                     Spacer(Modifier.height(50.dp))
+                }
                 }
             }
         }

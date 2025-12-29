@@ -24,7 +24,9 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.iamfiro.clari.feature.note.component.DetectedTerm
 import com.iamfiro.clari.feature.note.component.WordDeckSection
+import com.iamfiro.clari.feature.note.component.WordDetailModal
 import com.iamfiro.clari.feature.note.ui.AudioControlSection
 import com.iamfiro.clari.feature.note.ui.NoteDetailContent
 import com.iamfiro.clari.feature.note.ui.NoteDetailHeader
@@ -39,6 +41,9 @@ fun NoteDetailScreen(
 
     var headerHeight by remember { mutableStateOf(0.dp) }
     val density = LocalDensity.current
+    
+    var showWordDetailModal by remember { mutableStateOf(false) }
+    var selectedTerm by remember { mutableStateOf<DetectedTerm?>(null) }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -121,6 +126,10 @@ fun NoteDetailScreen(
                             viewModel.togglePlayPause()
                         }
                     }
+                },
+                onCardLongPress = { term ->
+                    selectedTerm = term
+                    showWordDetailModal = true
                 }
             )
 
@@ -137,5 +146,14 @@ fun NoteDetailScreen(
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
         }
+        
+        WordDetailModal(
+            visible = showWordDetailModal,
+            term = selectedTerm,
+            onDismiss = {
+                showWordDetailModal = false
+                selectedTerm = null
+            }
+        )
     }
 }

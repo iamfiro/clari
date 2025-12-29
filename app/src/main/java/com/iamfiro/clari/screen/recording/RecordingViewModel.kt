@@ -13,6 +13,8 @@ import com.iamfiro.clari.core.service.RecordingSessionService
 import com.iamfiro.clari.core.service.RecordingState
 import com.iamfiro.clari.core.service.ResourceHint
 import com.iamfiro.clari.core.service.SessionConnectionState
+import com.iamfiro.clari.feature.note.component.DetectedTerm
+import com.iamfiro.clari.feature.note.component.WordDeckState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +55,10 @@ class RecordingViewModel(
 
     private val _detectedKeywords = MutableStateFlow<List<KeywordHit>>(emptyList())
     val detectedKeywords: StateFlow<List<KeywordHit>> = _detectedKeywords.asStateFlow()
+
+    private val wordDeckState = WordDeckState()
+    val detectedTerms: StateFlow<List<DetectedTerm>> = wordDeckState.terms
+    val shouldTriggerHaptic: StateFlow<Boolean> = wordDeckState.shouldTriggerHaptic
 
     private val _resourceHints = MutableStateFlow<List<ResourceHint>>(emptyList())
     val resourceHints: StateFlow<List<ResourceHint>> = _resourceHints.asStateFlow()
@@ -97,7 +103,6 @@ class RecordingViewModel(
             }
         }
 
-        // Formatted 텍스트 수집
         viewModelScope.launch {
             recordingSessionService.formattedTexts.collect { text ->
                 Log.d(TAG, "Formatted: $text")
@@ -113,7 +118,6 @@ class RecordingViewModel(
             }
         }
 
-        // 키워드 탐지
         viewModelScope.launch {
             recordingSessionService.detectedKeywords.collect { newKeywords ->
                 val currentKeywords = _detectedKeywords.value
@@ -123,18 +127,18 @@ class RecordingViewModel(
                     _detectedKeywords.value = newKeywords
                     
                     if (newKeywords.isEmpty()) {
-                        // 모든 키워드가 제거된 경우
                         keywordDismissJob?.cancel()
                     } else if (newKeywords.size > currentKeywords.size || currentKeywords.isEmpty()) {
-                        // 새로운 키워드가 추가되었거나 처음 키워드가 추가된 경우
-                        // 가장 앞에 있는 카드만 타이머 시작 (뒤에 있는 카드들은 대기)
                         startKeywordDismissTimer()
                     }
+                }
+
+                newKeywords.forEach { keyword ->
+                    wordDeckState.onTermDetected(keyword)
                 }
             }
         }
 
-        // 리소스 힌트
         viewModelScope.launch {
             recordingSessionService.resourceHints.collect { hints ->
                 _resourceHints.value = hints
@@ -146,7 +150,6 @@ class RecordingViewModel(
             }
         }
 
-        // 녹음 상태 추적
         viewModelScope.launch {
             audioRecorderService.recordingState.collect { state ->
                 Log.d(TAG, "녹음 상태 변경: $state")
@@ -163,9 +166,6 @@ class RecordingViewModel(
         return audioRecorderService.hasRecordPermission()
     }
 
-    /**
-     * 녹음 시작 - 세션 생성 후 WebSocket 연결
-     */
     fun startRecording() {
         Log.d(TAG, "========== 녹음 시작 요청 ==========")
         
@@ -178,7 +178,6 @@ class RecordingViewModel(
         _error.value = null
         
         viewModelScope.launch {
-            // 1. 세션 생성
             recordingRepository.createSession(
                 title = null,
                 languageCode = languageCode,
@@ -188,11 +187,9 @@ class RecordingViewModel(
                 Log.d(TAG, "세션 생성 성공: ${response.sessionId}")
                 _sessionId.value = response.sessionId
                 _noteId.value = response.noteId
-                
-                // 2. WebSocket 연결
+
                 recordingSessionService.connect(response.sessionId)
-                
-                // 3. 연결 완료 대기 후 녹음 시작 (first로 한 번만 처리)
+
                 try {
                     val readyState = connectionState.first { state ->
                         state is SessionConnectionState.Ready ||
@@ -227,9 +224,6 @@ class RecordingViewModel(
         }
     }
 
-    /**
-     * 녹음 중지 - 세션 중지 API 호출
-     */
     fun stopRecording(onComplete: ((String?) -> Unit)? = null) {
         Log.d(TAG, "========== 녹음 중지 요청 ==========")
         
@@ -266,9 +260,6 @@ class RecordingViewModel(
         }
     }
 
-    /**
-     * 녹음 취소 - 세션 취소 API 호출 (노트 삭제)
-     */
     fun cancelRecording() {
         Log.d(TAG, "========== 녹음 취소 요청 ==========")
         
@@ -287,12 +278,10 @@ class RecordingViewModel(
                     }
                 
                 recordingSessionService.disconnect()
-                // 상태 초기화
                 resetRecordingState()
             }
         } else {
             recordingSessionService.disconnect()
-            // 상태 초기화
             resetRecordingState()
         }
     }
@@ -316,6 +305,10 @@ class RecordingViewModel(
         recordingSessionService.setHintsEnabled(enabled)
     }
 
+    fun onHapticTriggered() {
+        wordDeckState.onHapticTriggered()
+    }
+
     private fun startTimer() {
         timerJob?.cancel()
         _elapsedSeconds.value = 0
@@ -337,26 +330,18 @@ class RecordingViewModel(
         val secs = seconds % 60
         return "%02d:%02d".format(minutes, secs)
     }
-    
-    /**
-     * 가장 앞에 있는 키워드 카드만 5초 타이머를 시작
-     * 카드가 사라지면 다음 카드의 타이머를 시작
-     */
+
     private fun startKeywordDismissTimer() {
         keywordDismissJob?.cancel()
         keywordDismissJob = viewModelScope.launch {
             while (_detectedKeywords.value.isNotEmpty()) {
-                // 가장 앞에 있는 카드만 5초 대기
                 delay(5000)
-                
-                // 타이머가 끝난 후에도 키워드가 남아있는지 확인
+
                 val currentKeywords = _detectedKeywords.value
                 if (currentKeywords.isNotEmpty()) {
-                    // 가장 마지막에 있는 카드 제거 (가장 최근 카드부터 제거)
                     val updatedKeywords = currentKeywords.dropLast(1)
                     _detectedKeywords.value = updatedKeywords
-                    
-                    // 다음 카드가 있으면 타이머를 다시 시작
+
                     if (updatedKeywords.isNotEmpty()) {
                         // 다음 카드의 타이머는 이미 시작됨 (while 루프가 계속됨)
                     }
@@ -364,10 +349,7 @@ class RecordingViewModel(
             }
         }
     }
-    
-    /**
-     * 녹음 상태 초기화 - 다시 녹음할 수 있도록 모든 상태를 리셋
-     */
+
     fun resetRecordingState() {
         Log.d(TAG, "========== 녹음 상태 초기화 ==========")
         
@@ -385,6 +367,8 @@ class RecordingViewModel(
         _elapsedSeconds.value = 0
         _error.value = null
         itemIdCounter = 0
+
+        wordDeckState.clear()
         
         Log.d(TAG, "✅ 상태 초기화 완료 - 다시 녹음 가능")
     }
@@ -397,7 +381,6 @@ class RecordingViewModel(
     }
 }
 
-// 트랜스크립트 아이템
 data class TranscriptItem(
     val id: Int,
     val text: String,

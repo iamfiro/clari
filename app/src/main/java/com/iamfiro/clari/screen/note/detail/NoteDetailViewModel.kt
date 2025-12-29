@@ -6,9 +6,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.iamfiro.clari.core.repository.NoteRepository
-import com.iamfiro.clari.feature.note.model.Note
+import com.iamfiro.clari.core.repository.ProjectRepository
+import com.iamfiro.clari.core.service.KeywordHit
+import com.iamfiro.clari.feature.note.component.DetectedTerm
 import com.iamfiro.clari.feature.note.model.TranscriptLine
+import com.iamfiro.clari.feature.note.model.TranscriptWord
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,11 +27,15 @@ class NoteDetailViewModel(
     private val noteId: String
 ) : ViewModel() {
     private val noteRepository = NoteRepository.getInstance()
+    private val projectRepository = ProjectRepository.getInstance()
     private val _uiState = MutableStateFlow(NoteDetailUiState())
     val uiState: StateFlow<NoteDetailUiState> = _uiState.asStateFlow()
 
     private var mediaPlayer: MediaPlayer? = null
     private var positionUpdateJob: Job? = null
+
+    private val triggeredHapticIds = mutableSetOf<String>()
+    private var lastAutoDetectedWordIndex = -1
 
     init {
         loadNote()
@@ -46,6 +55,10 @@ class NoteDetailViewModel(
 
                     note.recordingUrl?.let { url ->
                         initMediaPlayer(url)
+                    }
+
+                    if (note.keywordPackIds.isNotEmpty()) {
+                        loadAvailableKeywords(note.keywordPackIds)
                     }
                 }
                 .onFailure { e ->
@@ -135,9 +148,6 @@ class NoteDetailViewModel(
         positionUpdateJob = null
     }
 
-    /**
-     * 현재 재생 위치에 해당하는 transcript 인덱스 및 word 인덱스 업데이트
-     */
     private fun updateCurrentTranscriptIndex() {
         val transcripts = _uiState.value.note?.transcripts ?: return
         val words = _uiState.value.note?.words
@@ -146,8 +156,7 @@ class NoteDetailViewModel(
         val transcriptIndex = transcripts.indexOfLast { transcript ->
             transcript.startMs <= currentPos
         }
-        
-        // 단어 인덱스 업데이트
+
         val wordIndex = words?.indexOfLast { word ->
             word.startMs <= currentPos && currentPos <= word.endMs
         } ?: -1
@@ -159,6 +168,72 @@ class NoteDetailViewModel(
                 currentWordIndex = wordIndex
             )
         }
+
+        if (wordIndex >= 0 && wordIndex != lastAutoDetectedWordIndex && _uiState.value.isPlaying) {
+            lastAutoDetectedWordIndex = wordIndex
+            words?.getOrNull(wordIndex)?.let { currentWord ->
+                checkAndAddKeyword(currentWord.text)
+            }
+        }
+    }
+
+    private fun checkAndAddKeyword(wordText: String) {
+        val normalizedWord = wordText.lowercase().trim()
+
+        _uiState.value.availableKeywords.forEach { (keywordKey, term) ->
+            if (normalizedWord.contains(keywordKey)) {
+                addTermToDisplay(term)
+            }
+        }
+    }
+
+    private fun addTermToDisplay(term: DetectedTerm) {
+        val isNewTerm = !triggeredHapticIds.contains(term.id)
+        
+        val currentTerms = _uiState.value.displayedTerms
+        val filteredTerms = currentTerms.filter { it.id != term.id }
+
+        if (currentTerms.firstOrNull()?.id == term.id) return
+        
+        val updatedTerm = term.copy(detectedAt = System.currentTimeMillis())
+        val newTerms = listOf(updatedTerm) + filteredTerms
+        
+        _uiState.value = _uiState.value.copy(
+            displayedTerms = newTerms,
+            shouldTriggerHaptic = isNewTerm
+        )
+        
+        if (isNewTerm) {
+            triggeredHapticIds.add(term.id)
+        }
+        
+        Log.d(TAG, "키워드 추가: ${term.keyword.name}, 새 키워드: $isNewTerm, 총 ${newTerms.size}개")
+    }
+
+    fun onWordClicked(word: TranscriptWord) {
+        checkAndAddKeyword(word.text)
+        
+        // 해당 위치로 이동
+        seekTo(word.startMs)
+        if (!_uiState.value.isPlaying && _uiState.value.isMediaReady) {
+            togglePlayPause()
+        }
+    }
+
+    fun onTranscriptClicked(transcript: TranscriptLine) {
+        val words = _uiState.value.note?.words?.filter { word ->
+            word.startMs >= transcript.startMs && word.startMs < transcript.endMs
+        } ?: emptyList()
+
+        words.forEach { word ->
+            checkAndAddKeyword(word.text)
+        }
+
+        seekToTranscript(transcript)
+    }
+
+    fun onHapticTriggered() {
+        _uiState.value = _uiState.value.copy(shouldTriggerHaptic = false)
     }
 
     fun refresh() {
@@ -215,14 +290,57 @@ class NoteDetailViewModel(
         _uiState.value = _uiState.value.copy(currentPositionMs = clampedPosition)
         updateCurrentTranscriptIndex()
     }
-    
-    /**
-     * 특정 transcript로 이동
-     */
+
     fun seekToTranscript(transcript: TranscriptLine) {
         seekTo(transcript.startMs)
         if (!_uiState.value.isPlaying && _uiState.value.isMediaReady) {
             togglePlayPause()
+        }
+    }
+
+    private fun loadAvailableKeywords(keywordPackIds: List<String>) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingKeywords = true)
+            
+            try {
+                val packs = keywordPackIds.map { packId ->
+                    async {
+                        projectRepository.getKeywordPackById(packId).getOrNull()
+                    }
+                }.awaitAll().filterNotNull()
+
+                val linkedProjects = packs.map { pack ->
+                    LinkedProject(id = pack.id, name = pack.name)
+                }
+
+                val keywordMap = mutableMapOf<String, DetectedTerm>()
+                packs.forEach { pack ->
+                    pack.word.forEach { word ->
+                        val normalizedName = word.name.lowercase().trim()
+                        if (!keywordMap.containsKey(normalizedName)) {
+                            keywordMap[normalizedName] = DetectedTerm(
+                                id = normalizedName,
+                                keyword = KeywordHit(
+                                    name = word.name,
+                                    description = word.meaning
+                                ),
+                                detectedAt = 0L
+                            )
+                        }
+                    }
+                }
+                
+                _uiState.value = _uiState.value.copy(
+                    linkedProjects = linkedProjects,
+                    availableKeywords = keywordMap,
+                    displayedTerms = emptyList(),
+                    isLoadingKeywords = false
+                )
+                Log.d(TAG, "연결된 프로젝트 ${linkedProjects.size}개, 키워드 ${keywordMap.size}개 로드 완료")
+            } catch (e: Exception) {
+                Log.e(TAG, "키워드 로드 실패", e)
+                _uiState.value = _uiState.value.copy(isLoadingKeywords = false)
+            }
         }
     }
 
@@ -254,9 +372,6 @@ class NoteDetailViewModel(
         }
     }
 
-    /**
-     * 음성 재생 정지 및 리소스 해제
-     */
     fun cleanup() {
         Log.d(TAG, "========== 음성 정지 및 리소스 해제 ==========")
         val mp = mediaPlayer

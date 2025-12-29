@@ -36,7 +36,7 @@ import com.iamfiro.clari.core.ui.component.ConfirmBottomSheet
 import com.iamfiro.clari.feature.note.component.RecordingControl
 import com.iamfiro.clari.feature.note.component.RecordingHeader
 import com.iamfiro.clari.feature.note.component.TranscribeContainer
-import com.iamfiro.clari.feature.note.component.WordCardOverlay
+import com.iamfiro.clari.feature.note.component.WordDeckSection
 import kotlinx.coroutines.launch
 
 private const val TAG = "RecordingScreen"
@@ -75,6 +75,8 @@ fun RecordingScreen(
     val partialText by viewModel.partialText.collectAsState()
     val transcriptItems by viewModel.transcriptItems.collectAsState()
     val detectedKeywords by viewModel.detectedKeywords.collectAsState()
+    val detectedTerms by viewModel.detectedTerms.collectAsState()
+    val shouldTriggerHaptic by viewModel.shouldTriggerHaptic.collectAsState()
     val error by viewModel.error.collectAsState()
 
     var hasPermission by remember {
@@ -100,7 +102,6 @@ fun RecordingScreen(
         }
     }
 
-    // 화면 진입 시 자동 녹음 시작
     LaunchedEffect(Unit) {
         Log.d(TAG, "========== 화면 진입 - 자동 시작 ==========")
         if (!hasPermission) {
@@ -110,14 +111,12 @@ fun RecordingScreen(
         }
     }
 
-    // 에러 처리
     LaunchedEffect(error) {
         error?.let {
             snackbarHostState.showSnackbar(it)
         }
     }
 
-    // 연결 상태 변경 처리
     LaunchedEffect(connectionState) {
         Log.d(TAG, "연결 상태 변경: $connectionState")
         when (connectionState) {
@@ -129,7 +128,6 @@ fun RecordingScreen(
         }
     }
 
-    // 화면 종료 시 정리
     DisposableEffect(Unit) {
         onDispose {
             Log.d(TAG, "========== 화면 종료 ==========")
@@ -179,6 +177,15 @@ fun RecordingScreen(
                         }
                     )
                 }
+                WordDeckSection(
+                    terms = detectedTerms,
+                    shouldTriggerHaptic = shouldTriggerHaptic,
+                    onHapticTriggered = { viewModel.onHapticTriggered() },
+                    onCardClick = { term ->
+                        Log.d(TAG, "탐지된 용어 클릭: ${term.keyword.name}")
+                    }
+                )
+                
                 RecordingControl(
                     isRecording = isRecording,
                     elapsedTime = viewModel.formatElapsedTime(elapsedSeconds),
@@ -195,7 +202,6 @@ fun RecordingScreen(
                         if (!hasPermission) {
                             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                         } else if (isRecording) {
-                            // 녹음 중이면 자동으로 저장하고 NoteDetail로 이동
                             isSaving = true
                             viewModel.stopRecording { noteId ->
                                 isSaving = false
@@ -216,17 +222,8 @@ fun RecordingScreen(
                     }
                 )
             }
-
-            // 키워드 오버레이
-            if (detectedKeywords.isNotEmpty()) {
-                WordCardOverlay(
-                    keywords = detectedKeywords,
-                    onDismiss = { /* auto dismiss */ }
-                )
-            }
         }
-        
-        // 녹음 완료 확인 (헤더의 종료 버튼용)
+
         ConfirmBottomSheet(
             visible = showConfirmBottomSheet,
             onDismiss = { showConfirmBottomSheet = false },
@@ -256,7 +253,6 @@ fun RecordingScreen(
             }
         )
 
-        // 녹음 취소 확인
         ConfirmBottomSheet(
             visible = showCancelBottomSheet,
             onDismiss = { showCancelBottomSheet = false },

@@ -1,7 +1,7 @@
 package com.iamfiro.clari.core.config
 
 object ApiConfig {
-    private const val HOST = "172.30.2.38:3000"
+    private const val HOST = "clari-api.thnos.app"
 
     const val BASE_URL = "http://$HOST/"
 

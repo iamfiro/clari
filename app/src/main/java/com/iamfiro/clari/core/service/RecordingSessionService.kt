@@ -27,12 +27,6 @@ import okio.ByteString
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * 녹음 세션용 WebSocket 서비스
- * - 세션 생성 후 sessionId와 token으로 연결
- * - 오디오 전송, 키워드/힌트 제어
- * - 실시간 트랜스크립션, 키워드 탐지, 리소스 힌트 수신
- */
 class RecordingSessionService(private val tokenManager: TokenManager) {
 
     companion object {
@@ -64,44 +58,33 @@ class RecordingSessionService(private val tokenManager: TokenManager) {
     // READY 전에 들어온 오디오를 소량만 버퍼링
     private val preReadyAudioQueue = ArrayDeque<String>(PRE_READY_QUEUE_LIMIT)
 
-    // 연결 상태
     private val _connectionState = MutableStateFlow<SessionConnectionState>(SessionConnectionState.Disconnected)
     val connectionState: StateFlow<SessionConnectionState> get() = _connectionState
 
-    // 세션 정보
     private val _sessionId = MutableStateFlow<String?>(null)
     val sessionId: StateFlow<String?> get() = _sessionId
 
-    // 실시간 partial 텍스트
     private val _partialText = MutableStateFlow<String?>(null)
     val partialText: StateFlow<String?> get() = _partialText
 
-    // Committed 텍스트
     private val _committedTexts = MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 64)
     val committedTexts: SharedFlow<String> get() = _committedTexts
 
-    // Formatted 텍스트
     private val _formattedTexts = MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 64)
     val formattedTexts: SharedFlow<String> get() = _formattedTexts
 
-    // 키워드 탐지
     private val _detectedKeywords = MutableSharedFlow<List<KeywordHit>>(replay = 1, extraBufferCapacity = 16)
     val detectedKeywords: SharedFlow<List<KeywordHit>> get() = _detectedKeywords
 
-    // 리소스 힌트
     private val _resourceHints = MutableSharedFlow<List<ResourceHint>>(replay = 1, extraBufferCapacity = 16)
     val resourceHints: SharedFlow<List<ResourceHint>> get() = _resourceHints
 
-    // 기능 활성화 상태
     private val _keywordEnabled = MutableStateFlow(true)
     val keywordEnabled: StateFlow<Boolean> get() = _keywordEnabled
 
     private val _hintsEnabled = MutableStateFlow(true)
     val hintsEnabled: StateFlow<Boolean> get() = _hintsEnabled
 
-    /**
-     * 세션 WebSocket 연결
-     */
     fun connect(sessionId: String) {
         Log.d(TAG, "========== 녹음 세션 WebSocket 연결 시도 ==========")
         Log.d(TAG, "SessionId: $sessionId, State: ${_connectionState.value}")
@@ -172,7 +155,6 @@ class RecordingSessionService(private val tokenManager: TokenManager) {
 
         override fun onClosing(ws: WebSocket, code: Int, reason: String) {
             Log.d(TAG, "WebSocket 닫히는 중: $code, $reason")
-            // 중복 close 호출하지 않음
             mainScope.launch { _connectionState.value = SessionConnectionState.Disconnected }
         }
 
@@ -291,8 +273,25 @@ class RecordingSessionService(private val tokenManager: TokenManager) {
                 }
 
                 "error" -> {
-                    val err = obj["error"]?.jsonPrimitive?.content ?: "알 수 없는 오류"
+                    val errorElement = obj["error"]
+                    val err = when {
+                        errorElement == null -> "알 수 없는 오류"
+                        errorElement is kotlinx.serialization.json.JsonPrimitive -> errorElement.content
+                        errorElement is kotlinx.serialization.json.JsonObject -> {
+
+                            val message = errorElement["message"]?.jsonPrimitive?.content
+                            val code = errorElement["code"]?.jsonPrimitive?.content
+                            when {
+                                message != null && code != null -> "[$code] $message"
+                                message != null -> message
+                                code != null -> "오류 코드: $code"
+                                else -> errorElement.toString()
+                            }
+                        }
+                        else -> errorElement.toString()
+                    }
                     Log.e(TAG, "❌ [ERROR] $err")
+                    Log.e(TAG, "원본 에러 데이터: $errorElement")
                     _connectionState.value = SessionConnectionState.Error(err)
                 }
 
@@ -315,9 +314,6 @@ class RecordingSessionService(private val tokenManager: TokenManager) {
         }
     }
 
-    /**
-     * 오디오 데이터 전송
-     */
     fun sendAudio(base64Audio: String) {
         val count = sendCount.incrementAndGet()
 
@@ -329,7 +325,6 @@ class RecordingSessionService(private val tokenManager: TokenManager) {
             return
         }
 
-        // Connected(ready 전)에는 소량만 버퍼링
         if (st is SessionConnectionState.Connected) {
             if (preReadyAudioQueue.size >= PRE_READY_QUEUE_LIMIT) preReadyAudioQueue.removeFirst()
             preReadyAudioQueue.addLast(base64Audio)
@@ -366,16 +361,10 @@ class RecordingSessionService(private val tokenManager: TokenManager) {
         }
     }
 
-    /**
-     * 키워드 탐지 활성화/비활성화
-     */
     fun setKeywordEnabled(enabled: Boolean) {
         sendControl("keyword.control", if (enabled) "on" else "off")
     }
 
-    /**
-     * 리소스 힌트 활성화/비활성화
-     */
     fun setHintsEnabled(enabled: Boolean) {
         sendControl("hints.control", if (enabled) "on" else "off")
     }
@@ -397,9 +386,6 @@ class RecordingSessionService(private val tokenManager: TokenManager) {
         }
     }
 
-    /**
-     * 연결 해제
-     */
     fun disconnect() {
         Log.d(TAG, "========== WebSocket 연결 해제 ==========")
         manualClose = true
@@ -414,9 +400,6 @@ class RecordingSessionService(private val tokenManager: TokenManager) {
         sendCount.set(0)
     }
 
-    /**
-     * 리소스 해제
-     */
     fun release() {
         disconnect()
 
@@ -444,7 +427,6 @@ class RecordingSessionService(private val tokenManager: TokenManager) {
     }
 }
 
-// 연결 상태
 sealed class SessionConnectionState {
     data object Disconnected : SessionConnectionState()
     data object Connecting : SessionConnectionState()
@@ -453,17 +435,14 @@ sealed class SessionConnectionState {
     data class Error(val message: String) : SessionConnectionState()
 }
 
-// 오디오 메시지
 @Serializable
 data class AudioMessage(val audio: String)
 
-// 키워드 탐지 결과
 data class KeywordHit(
     val name: String,
     val description: String
 )
 
-// 리소스 힌트
 data class ResourceHint(
     val resourceId: String,
     val resourceTitle: String,

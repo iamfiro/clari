@@ -24,6 +24,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.iamfiro.clari.feature.note.component.WordDeckSection
 import com.iamfiro.clari.feature.note.ui.AudioControlSection
 import com.iamfiro.clari.feature.note.ui.NoteDetailContent
 import com.iamfiro.clari.feature.note.ui.NoteDetailHeader
@@ -47,8 +48,7 @@ fun NoteDetailScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
             NoteDetailContent(
                 note = uiState.note,
@@ -57,13 +57,13 @@ fun NoteDetailScreen(
                 isPlaying = uiState.isPlaying,
                 isLoading = uiState.isLoading,
                 error = uiState.error,
-                onTranscriptClick = { transcript -> viewModel.seekToTranscript(transcript) },
-                onWordClick = { word -> 
-                    viewModel.seekTo(word.startMs)
-                    if (!uiState.isPlaying && uiState.isMediaReady) {
-                        viewModel.togglePlayPause()
-                    }
+                onTranscriptClick = { transcript -> 
+                    viewModel.onTranscriptClicked(transcript)
                 },
+                onWordClick = { word ->
+                    viewModel.onWordClicked(word)
+                },
+                linkedProjects = uiState.linkedProjects,
                 headerHeight = headerHeight
             )
         }
@@ -92,7 +92,7 @@ fun NoteDetailScreen(
             )
         }
 
-        Box(
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .zIndex(1f)
@@ -105,8 +105,25 @@ fun NoteDetailScreen(
                     )
                 )
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(12.dp)
+                .padding(bottom = 8.dp)
         ) {
+            WordDeckSection(
+                terms = uiState.displayedTerms,
+                shouldTriggerHaptic = uiState.shouldTriggerHaptic,
+                onHapticTriggered = { viewModel.onHapticTriggered() },
+                onCardClick = { term ->
+                    val targetWord = uiState.note?.words?.firstOrNull {
+                        it.text.equals(term.keyword.name, ignoreCase = true)
+                    }
+                    targetWord?.let {
+                        viewModel.seekTo(it.startMs)
+                        if (!uiState.isPlaying && uiState.isMediaReady) {
+                            viewModel.togglePlayPause()
+                        }
+                    }
+                }
+            )
+
             AudioControlSection(
                 isPlaying = uiState.isPlaying,
                 isMediaReady = uiState.isMediaReady,
@@ -116,9 +133,9 @@ fun NoteDetailScreen(
                 onPlayPauseClick = { viewModel.togglePlayPause() },
                 onSkipBackward = { viewModel.skipBackward() },
                 onSkipForward = { viewModel.skipForward() },
-                onSeek = { viewModel.seekTo(it) }
+                onSeek = { viewModel.seekTo(it) },
+                modifier = Modifier.padding(horizontal = 8.dp)
             )
         }
     }
 }
-

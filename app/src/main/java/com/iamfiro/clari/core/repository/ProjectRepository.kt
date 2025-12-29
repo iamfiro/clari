@@ -1,5 +1,6 @@
 package com.iamfiro.clari.core.repository
 
+import android.util.Log
 import com.iamfiro.clari.core.mapper.KeywordPackMapper
 import com.iamfiro.clari.core.network.ApiClient
 import com.iamfiro.clari.core.network.dto.AddProjectWordRequest
@@ -11,6 +12,8 @@ import com.iamfiro.clari.feature.project.model.Project
 import com.iamfiro.clari.feature.project.model.Word
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+
+private const val TAG = "ProjectRepository"
 
 class ProjectRepository {
     companion object {
@@ -43,16 +46,17 @@ class ProjectRepository {
             emit(emptyList())
         }
     }
-    
-    /**
-     * 키워드팩 상세 조회
-     */
+
     suspend fun getKeywordPackById(packId: String): Result<Project> {
         return try {
+            Log.d(TAG, "프로젝트 조회 시작: packId=$packId")
             val response = ApiClient.projectAPI.getProject(packId)
+            Log.d(TAG, "API 응답 수신: ${response.pack.name}, words=${response.pack.words.size}")
             val pack = KeywordPackMapper.fromDto(response.pack)
+            Log.d(TAG, "매핑 완료: ${pack.name}, words=${pack.word.size}")
             Result.success(pack)
         } catch (e: Exception) {
+            Log.e(TAG, "프로젝트 조회 실패: packId=$packId", e)
             Result.failure(e)
         }
     }

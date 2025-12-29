@@ -1,6 +1,12 @@
 package com.iamfiro.clari.screen.note.detail
 
+import com.iamfiro.clari.feature.note.component.DetectedTerm
 import com.iamfiro.clari.feature.note.model.Note
+
+data class LinkedProject(
+    val id: String,
+    val name: String
+)
 
 data class NoteDetailUiState(
     val note: Note? = null,
@@ -12,5 +18,12 @@ data class NoteDetailUiState(
     val isMediaReady: Boolean = false,
     val isBuffering: Boolean = false,
     val currentTranscriptIndex: Int = -1,
-    val currentWordIndex: Int = -1 // 현재 재생 중인 단어 인덱스
+    val currentWordIndex: Int = -1,
+
+    val linkedProjects: List<LinkedProject> = emptyList(),
+    val availableKeywords: Map<String, DetectedTerm> = emptyMap(),
+    val displayedTerms: List<DetectedTerm> = emptyList(),
+
+    val shouldTriggerHaptic: Boolean = false,
+    val isLoadingKeywords: Boolean = false
 )

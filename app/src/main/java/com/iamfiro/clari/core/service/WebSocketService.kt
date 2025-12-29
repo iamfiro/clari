@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -73,8 +75,7 @@ class WebSocketService(private val tokenManager: TokenManager) {
         
         val endpoint = ApiConfig.WebSocket.STT_ENDPOINT
         Log.d(TAG, "연결 URL: $endpoint")
-        
-        // 토큰 가져오기
+
         Log.d(TAG, "세션 토큰 조회 시작...")
         val token = tokenManager.getSessionTokenBlocking()
         Log.d(TAG, "세션 토큰 조회 완료 - 토큰 존재: ${!token.isNullOrEmpty()}")
@@ -91,8 +92,7 @@ class WebSocketService(private val tokenManager: TokenManager) {
         
         val requestBuilder = Request.Builder()
             .url(endpoint)
-        
-        // Authorization 헤더 추가
+
         if (!token.isNullOrEmpty()) {
             requestBuilder.header("Authorization", "Bearer $token")
             Log.d(TAG, "✅ Authorization 헤더 추가됨: Bearer ${token.take(20)}...")
@@ -101,8 +101,7 @@ class WebSocketService(private val tokenManager: TokenManager) {
         }
         
         val request = requestBuilder.build()
-        
-        // Request 상세 정보 로깅
+
         Log.d(TAG, "========== Request 정보 ==========")
         Log.d(TAG, "URL: ${request.url}")
         Log.d(TAG, "Method: ${request.method}")
@@ -224,6 +223,33 @@ class WebSocketService(private val tokenManager: TokenManager) {
         Log.d(TAG, "========== 메시지 파싱 시작 ==========")
         
         try {
+            val jsonElement = json.parseToJsonElement(text)
+            val jsonObject = jsonElement.jsonObject
+            val type = jsonObject["type"]?.jsonPrimitive?.content
+
+            if (type == "error") {
+                val errorElement = jsonObject["error"]
+                val errorMessage = when {
+                    errorElement == null -> "알 수 없는 오류"
+                    errorElement is kotlinx.serialization.json.JsonPrimitive -> errorElement.content
+                    errorElement is kotlinx.serialization.json.JsonObject -> {
+                        val message = errorElement["message"]?.jsonPrimitive?.content
+                        val code = errorElement["code"]?.jsonPrimitive?.content
+                        when {
+                            message != null && code != null -> "[$code] $message"
+                            message != null -> message
+                            code != null -> "오류 코드: $code"
+                            else -> errorElement.toString()
+                        }
+                    }
+                    else -> errorElement.toString()
+                }
+                Log.e(TAG, "❌ [ERROR] WebSocket 에러 메시지 수신: $errorMessage")
+                Log.e(TAG, "원본 에러 데이터: $errorElement")
+                _connectionState.value = ConnectionState.Error(errorMessage)
+                return
+            }
+            
             val response = json.decodeFromString<SttResponse>(text)
             Log.d(TAG, "파싱 성공 - Type: ${response.type}")
             Log.d(TAG, "파싱 성공 - Text: ${response.text}")
@@ -276,8 +302,7 @@ class WebSocketService(private val tokenManager: TokenManager) {
         try {
             val message = AudioMessage(audio = base64Audio)
             val jsonMessage = json.encodeToString(message)
-            
-            // 매 10번째 전송마다 상세 로그
+
             if (sendCount % 10 == 1) {
                 Log.d(TAG, "========== 오디오 전송 #$sendCount ==========")
                 Log.d(TAG, "Base64 길이: ${base64Audio.length}")

@@ -53,11 +53,11 @@ fun AudioControlSection(
         modifier = modifier
             .fillMaxWidth()
             .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(20.dp),
-                spotColor = Color.Black.copy(alpha = 0.1f)
+                elevation = 4.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = Color.Black.copy(alpha = 0.08f)
             ),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -68,15 +68,15 @@ fun AudioControlSection(
                 .background(MaterialTheme.colorScheme.surface)
                 .border(
                     width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
                 )
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = Dimens.ScreenPadding)
-                    .padding(top = 16.dp, bottom = 16.dp)
+                    .padding(top = 12.dp, bottom = 12.dp)
             ) {
                 Column {
                     Slider(
@@ -111,7 +111,7 @@ fun AudioControlSection(
                     }
                 }
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(6.dp))
 
                 Row(
                     horizontalArrangement = Arrangement.Center,
@@ -122,17 +122,17 @@ fun AudioControlSection(
                         painter = painterResource(R.drawable.back_skip_5sec),
                         contentDescription = "5초 뒤로",
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(32.dp)
                             .alpha(if (isMediaReady) 0.7f else 0.3f)
                             .clickable(enabled = isMediaReady) { onSkipBackward() }
                     )
 
-                    Spacer(Modifier.width(32.dp))
+                    Spacer(Modifier.width(24.dp))
 
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .size(64.dp)
+                            .size(48.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary)
                             .clickable(enabled = isMediaReady && !isBuffering) { onPlayPauseClick() }
@@ -141,15 +141,15 @@ fun AudioControlSection(
                             isBuffering -> {
                                 CircularProgressIndicator(
                                     color = MaterialTheme.colorScheme.onPrimary,
-                                    strokeWidth = 3.dp,
-                                    modifier = Modifier.size(28.dp)
+                                    strokeWidth = 2.5.dp,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                             !isMediaReady -> {
                                 CircularProgressIndicator(
                                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
                                     strokeWidth = 2.dp,
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                             else -> {
@@ -157,19 +157,19 @@ fun AudioControlSection(
                                     painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play),
                                     contentDescription = if (isPlaying) "일시정지" else "재생",
                                     tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         }
                     }
 
-                    Spacer(Modifier.width(32.dp))
+                    Spacer(Modifier.width(24.dp))
 
                     Icon(
                         painter = painterResource(R.drawable.skip_5sec),
                         contentDescription = "5초 앞으로",
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(32.dp)
                             .alpha(if (isMediaReady) 0.7f else 0.3f)
                             .clickable(enabled = isMediaReady) { onSkipForward() }
                     )

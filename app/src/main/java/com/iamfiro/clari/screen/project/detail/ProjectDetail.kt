@@ -75,6 +75,7 @@ import com.iamfiro.clari.feature.project.model.ProjectConnectorType
 fun ProjectDetailScreen(projectId: String) {
     val projectRepository = remember { ProjectRepository.getInstance() }
     val viewModel: ProjectDetailViewModel = viewModel(
+        key = projectId,
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -83,11 +84,12 @@ fun ProjectDetailScreen(projectId: String) {
         }
     )
 
-    val project by viewModel.project.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val aiSuggestions by viewModel.aiSuggestions.collectAsState()
-    val isAiLoading by viewModel.isAiLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(projectId) {
+        android.util.Log.d("ProjectDetailScreen", "projectId 변경 감지: $projectId")
+        viewModel.refresh()
+    }
     val backStack = LocalNavBackStack.current
     val context = LocalContext.current
 
@@ -125,19 +127,34 @@ fun ProjectDetailScreen(projectId: String) {
 
     Scaffold { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
-            if (isLoading) {
+            if (uiState.isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text("로딩 중...")
                 }
-            } else if (project == null) {
+            } else if (uiState.project == null) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("프로젝트를 찾을 수 없습니다.")
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(Dimens.ScreenPadding)
+                    ) {
+                        Text(
+                            text = uiState.error ?: "프로젝트를 찾을 수 없습니다.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Button(
+                            onClick = { viewModel.refresh() }
+                        ) {
+                            Text("다시 시도")
+                        }
+                    }
                 }
             } else {
                 LazyColumn(
@@ -146,7 +163,7 @@ fun ProjectDetailScreen(projectId: String) {
                     item {
                         Box {
                             AsyncImage(
-                                model = project!!.thumbnail,
+                                model = uiState.project!!.thumbnail,
                                 contentDescription = "배너",
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -211,7 +228,7 @@ fun ProjectDetailScreen(projectId: String) {
                             modifier = Modifier.padding(Dimens.ScreenPadding)
                         ) {
                             Text(
-                                project!!.name,
+                                uiState.project!!.name,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -241,7 +258,7 @@ fun ProjectDetailScreen(projectId: String) {
                                     Text("추가", style = MaterialTheme.typography.labelMedium)
                                 }
                             }
-                            project!!.connector?.forEach { connector ->
+                            uiState.project!!.connector?.forEach { connector ->
                                 ConnectorCard(
                                     connector = connector,
                                     onEdit = {
@@ -256,7 +273,7 @@ fun ProjectDetailScreen(projectId: String) {
                                     }
                                 )
                             }
-                            if (project!!.connector.isNullOrEmpty()) {
+                            if (uiState.project!!.connector.isNullOrEmpty()) {
                                 Text(
                                     "외부 연결이 없습니다",
                                     style = MaterialTheme.typography.bodyMedium,
@@ -280,7 +297,7 @@ fun ProjectDetailScreen(projectId: String) {
                     }
 
                     item {
-                        if (project!!.word.isEmpty()) {
+                        if (uiState.project!!.word.isEmpty()) {
                             Text(
                                 "단어가 없습니다",
                                 style = MaterialTheme.typography.bodyMedium,
@@ -293,7 +310,7 @@ fun ProjectDetailScreen(projectId: String) {
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
                                 modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)
                             ) {
-                                project!!.word.forEach { word ->
+                                uiState.project!!.word.forEach { word ->
                                     WordCard(
                                         word = word,
                                         modifier = Modifier
@@ -370,8 +387,8 @@ fun ProjectDetailScreen(projectId: String) {
             wordMeaning = ""
             viewModel.clearAiSuggestions()
         },
-        aiSuggestions = aiSuggestions,
-        isAiLoading = isAiLoading,
+        aiSuggestions = uiState.aiSuggestions,
+        isAiLoading = uiState.isAiLoading,
         onGetAiSuggestions = { name -> viewModel.getAiSuggestions(name) }
     )
 

@@ -1,31 +1,41 @@
 package com.iamfiro.clari.feature.note.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.iamfiro.clari.R
 import com.iamfiro.clari.core.ui.theme.Dimens
 import com.iamfiro.clari.feature.note.component.AISummarySection
 import com.iamfiro.clari.feature.note.model.Note
 import com.iamfiro.clari.feature.note.model.TranscriptLine
 import com.iamfiro.clari.feature.note.model.TranscriptWord
+import com.iamfiro.clari.screen.note.detail.LinkedProject
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NoteDetailContent(
     note: Note?,
@@ -36,6 +46,7 @@ fun NoteDetailContent(
     error: String?,
     onTranscriptClick: (TranscriptLine) -> Unit,
     onWordClick: (TranscriptWord) -> Unit,
+    linkedProjects: List<LinkedProject> = emptyList(),
     headerHeight: androidx.compose.ui.unit.Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
@@ -79,6 +90,16 @@ fun NoteDetailContent(
                     .fillMaxWidth()
             ) {
                 item { Spacer(Modifier.height(headerHeight + 32.dp)) }
+
+                if (linkedProjects.isNotEmpty()) {
+                    item {
+                        LinkedProjectsSection(
+                            projects = linkedProjects,
+                            modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)
+                        )
+                        Spacer(Modifier.height(16.dp))
+                    }
+                }
 
                 item {
                     Box(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
@@ -129,6 +150,55 @@ fun NoteDetailContent(
                 item { Spacer(Modifier.height(210.dp)) }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LinkedProjectsSection(
+    projects: List<LinkedProject>,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.folder),
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = MaterialTheme.colorScheme.secondary
+        )
+        
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            projects.forEach { project ->
+                ProjectChip(name = project.name)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProjectChip(
+    name: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        Text(
+            text = name,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 

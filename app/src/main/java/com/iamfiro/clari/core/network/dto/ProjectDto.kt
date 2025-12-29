@@ -1,5 +1,6 @@
 package com.iamfiro.clari.core.network.dto
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -16,6 +17,7 @@ data class ProjectPackResponse(
 data class ProjectDto(
     val id: String,
     val name: String,
+    @SerialName("keywords")
     val words: List<ProjectWordDTO> = emptyList(),
     val createdAt: String,
     val updatedAt: String,

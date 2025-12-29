@@ -22,10 +22,7 @@ object NoteMapper {
     private val json = Json { ignoreUnknownKeys = true }
     private val isoFormatter = DateTimeFormatter.ISO_DATE_TIME
     private val displayFormatter = DateTimeFormatter.ofPattern("yyyy년 M월 d일 HH:mm")
-    
-    /**
-     * NoteListItemDto -> Note (리스트용)
-     */
+
     fun fromListItemDto(dto: NoteListItemDto): Note {
         val createdAt = parseDateTime(dto.createdAt)
         
@@ -38,26 +35,21 @@ object NoteMapper {
             recordedAtText = createdAt.format(displayFormatter)
         )
     }
-    
-    /**
-     * NoteDto -> Note (상세용)
-     */
+
     fun fromDto(dto: NoteDto): Note {
         val createdAt = parseDateTime(dto.createdAt)
         val noteType = when (dto.recordingStatus) {
             "completed" -> NoteType.READY
             else -> NoteType.NOT_READY
         }
-        
-        // AI Summary 파싱
+
         val aiSummary = dto.aiSummary?.let {
             AiSummary(
                 title = "AI 요약",
                 content = it
             )
         }
-        
-        // Speakers 매핑
+
         val speakers = dto.speakers?.map { 
             Speaker(
                 id = it.speaker_id,
@@ -66,11 +58,9 @@ object NoteMapper {
         } ?: emptyList()
         
         val speakerMap = speakers.associateBy { it.id }
-        
-        // Transcript 파싱 (새로운 words 구조 우선)
+
         val (transcripts, formattedText) = parseTranscript(dto.content, speakerMap)
-        
-        // 단어별 하이라이트용 words 파싱
+
         val words = parseWordsForHighlight(dto.content, speakerMap)
         
         return Note(
@@ -85,7 +75,8 @@ object NoteMapper {
             recordingUrl = dto.recordingUrl,
             speakers = speakers,
             formattedText = formattedText,
-            words = words.takeIf { it.isNotEmpty() }
+            words = words.takeIf { it.isNotEmpty() },
+            keywordPackIds = dto.keywordPackIds
         )
     }
     
@@ -94,7 +85,6 @@ object NoteMapper {
             LocalDateTime.parse(isoString, isoFormatter)
         } catch (e: Exception) {
             try {
-                // ISO 형식에서 Z 제거하고 파싱 시도
                 val cleaned = isoString.replace("Z", "").replace(Regex("\\.\\d+"), "")
                 LocalDateTime.parse(cleaned)
             } catch (e2: Exception) {
@@ -102,10 +92,7 @@ object NoteMapper {
             }
         }
     }
-    
-    /**
-     * content JSON 파싱하여 TranscriptLine 리스트와 포맷된 텍스트 반환
-     */
+
     private fun parseTranscript(
         content: String?,
         speakerMap: Map<String, Speaker>
@@ -114,13 +101,12 @@ object NoteMapper {
         
         return try {
             val transcriptContent = json.decodeFromString<TranscriptContent>(content)
-            
-            // 새로운 words 구조가 있는 경우
+
             if (transcriptContent.words.isNotEmpty()) {
                 val transcripts = parseWordsToTranscripts(transcriptContent.words, speakerMap)
                 Pair(transcripts, transcriptContent.formatted_text)
             } 
-            // 레거시 segments 구조
+
             else if (transcriptContent.segments.isNotEmpty()) {
                 val transcripts = transcriptContent.segments.map { segment ->
                     val speaker = speakerMap[segment.speaker_id] 
@@ -144,10 +130,7 @@ object NoteMapper {
             Pair(null, null)
         }
     }
-    
-    /**
-     * words 배열을 스피커별 TranscriptLine으로 그룹화
-     */
+
     private fun parseWordsToTranscripts(
         words: List<com.iamfiro.clari.core.network.dto.TranscriptWord>,
         speakerMap: Map<String, Speaker>
@@ -168,18 +151,15 @@ object NoteMapper {
             }
             
             if (currentSpeakerId == null) {
-                // 첫 번째 단어
                 currentSpeakerId = word.speaker_id
                 currentText.append(word.text)
                 startMs = (word.start * 1000).toLong()
                 startTimeSec = word.start.toInt()
                 endMs = (word.end * 1000).toLong()
             } else if (word.speaker_id == currentSpeakerId) {
-                // 같은 스피커 - 텍스트 이어붙이기
                 currentText.append(word.text)
                 endMs = (word.end * 1000).toLong()
             } else {
-                // 스피커 변경 - 현재까지의 내용 저장하고 새로 시작
                 val speaker = speakerMap[currentSpeakerId] 
                     ?: Speaker(id = currentSpeakerId)
                 
@@ -192,8 +172,7 @@ object NoteMapper {
                         endMs = endMs
                     )
                 )
-                
-                // 새 스피커로 리셋
+
                 currentSpeakerId = word.speaker_id
                 currentText = StringBuilder(word.text)
                 startMs = (word.start * 1000).toLong()
@@ -201,8 +180,7 @@ object NoteMapper {
                 endMs = (word.end * 1000).toLong()
             }
         }
-        
-        // 마지막 스피커의 텍스트 추가
+
         if (currentSpeakerId != null && currentText.isNotEmpty()) {
             val speaker = speakerMap[currentSpeakerId] 
                 ?: Speaker(id = currentSpeakerId)
@@ -220,10 +198,7 @@ object NoteMapper {
         
         return result
     }
-    
-    /**
-     * words 배열을 개별 TranscriptWord로 변환 (하이라이트용)
-     */
+
     fun parseWordsForHighlight(
         content: String?,
         speakerMap: Map<String, Speaker>
@@ -246,10 +221,7 @@ object NoteMapper {
             emptyList()
         }
     }
-    
-    /**
-     * Speaker -> SpeakerDto
-     */
+
     fun toSpeakerDto(speaker: Speaker): SpeakerDto {
         return SpeakerDto(
             speaker_id = speaker.id,

@@ -21,21 +21,8 @@ class ProjectDetailViewModel(
     private val projectId: String
 ) : ViewModel() {
 
-    private val _project = MutableStateFlow<Project?>(null)
-    val project: StateFlow<Project?> = _project.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
-
-    // AI 자동완성 제안
-    private val _aiSuggestions = MutableStateFlow<List<String>>(emptyList())
-    val aiSuggestions: StateFlow<List<String>> = _aiSuggestions.asStateFlow()
-
-    private val _isAiLoading = MutableStateFlow(false)
-    val isAiLoading: StateFlow<Boolean> = _isAiLoading.asStateFlow()
+    private val _uiState = MutableStateFlow(ProjectDetailUiState())
+    val uiState: StateFlow<ProjectDetailUiState> = _uiState.asStateFlow()
 
     init {
         loadProject()
@@ -43,20 +30,31 @@ class ProjectDetailViewModel(
 
     private fun loadProject() {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
+            Log.d(TAG, "loadProject 시작: projectId=$projectId")
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                error = null,
+                project = null // 이전 데이터 초기화
+            )
             
             projectRepository.getKeywordPackById(projectId)
                 .onSuccess { pack ->
-                    _project.value = pack
-                    Log.d(TAG, "프로젝트 로드 완료: ${pack.name}")
+                    Log.d(TAG, "프로젝트 로드 완료: id=${pack.id}, name=${pack.name}, words=${pack.word.size}")
+                    _uiState.value = _uiState.value.copy(
+                        project = pack,
+                        isLoading = false,
+                        error = null
+                    )
+                    Log.d(TAG, "uiState 업데이트 완료: project.id=${_uiState.value.project?.id}, project.name=${_uiState.value.project?.name}")
                 }
                 .onFailure { e ->
-                    Log.e(TAG, "프로젝트 로드 실패", e)
-                    _error.value = "프로젝트를 불러오는데 실패했습니다: ${e.message}"
+                    Log.e(TAG, "프로젝트 로드 실패: projectId=$projectId", e)
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "프로젝트를 불러오는데 실패했습니다: ${e.message}",
+                        project = null
+                    )
                 }
-            
-            _isLoading.value = false
         }
     }
 
@@ -66,56 +64,71 @@ class ProjectDetailViewModel(
 
     fun addWord(name: String, meaning: String) {
         viewModelScope.launch {
-            _error.value = null
+            _uiState.value = _uiState.value.copy(error = null)
             
             val word = Word(name = name, meaning = meaning)
             projectRepository.addProjectWord(projectId, word)
                 .onSuccess { pack ->
-                    _project.value = pack
-                    Log.d(TAG, "키워드 추가 완료: $name")
+                    Log.d(TAG, "키워드 추가 완료: $name, words=${pack.word.size}")
+                    _uiState.value = _uiState.value.copy(
+                        project = pack,
+                        error = null
+                    )
                 }
                 .onFailure { e ->
                     Log.e(TAG, "키워드 추가 실패", e)
-                    _error.value = "키워드 추가에 실패했습니다: ${e.message}"
+                    _uiState.value = _uiState.value.copy(
+                        error = "키워드 추가에 실패했습니다: ${e.message}"
+                    )
                 }
         }
     }
 
     fun removeWord(wordName: String) {
         viewModelScope.launch {
-            _error.value = null
+            _uiState.value = _uiState.value.copy(error = null)
             
             projectRepository.removeProjectWord(projectId, wordName)
                 .onSuccess { pack ->
-                    _project.value = pack
-                    Log.d(TAG, "키워드 삭제 완료: $wordName")
+                    Log.d(TAG, "키워드 삭제 완료: $wordName, words=${pack.word.size}")
+                    _uiState.value = _uiState.value.copy(
+                        project = pack,
+                        error = null
+                    )
                 }
                 .onFailure { e ->
                     Log.e(TAG, "키워드 삭제 실패", e)
-                    _error.value = "키워드 삭제에 실패했습니다: ${e.message}"
+                    _uiState.value = _uiState.value.copy(
+                        error = "키워드 삭제에 실패했습니다: ${e.message}"
+                    )
                 }
         }
     }
 
     fun updateProjectName(newName: String) {
         viewModelScope.launch {
-            _error.value = null
+            _uiState.value = _uiState.value.copy(error = null)
             
             projectRepository.updateProject(projectId, name = newName)
                 .onSuccess { pack ->
-                    _project.value = pack
                     Log.d(TAG, "프로젝트 이름 변경 완료: $newName")
+                    _uiState.value = _uiState.value.copy(
+                        project = pack,
+                        error = null
+                    )
                 }
                 .onFailure { e ->
                     Log.e(TAG, "프로젝트 이름 변경 실패", e)
-                    _error.value = "이름 변경에 실패했습니다: ${e.message}"
+                    _uiState.value = _uiState.value.copy(
+                        error = "이름 변경에 실패했습니다: ${e.message}"
+                    )
                 }
         }
     }
 
     fun updateBannerImage(uri: Uri) {
         viewModelScope.launch {
-            _error.value = null
+            _uiState.value = _uiState.value.copy(error = null)
             
             // 이미지 URL을 previewImageUrl로 업데이트
             projectRepository.updateProject(
@@ -123,19 +136,24 @@ class ProjectDetailViewModel(
                 previewImageUrl = uri.toString()
             )
                 .onSuccess { pack ->
-                    _project.value = pack
                     Log.d(TAG, "배너 이미지 업데이트 완료")
+                    _uiState.value = _uiState.value.copy(
+                        project = pack,
+                        error = null
+                    )
                 }
                 .onFailure { e ->
                     Log.e(TAG, "배너 이미지 업데이트 실패", e)
-                    _error.value = "배너 이미지 업로드에 실패했습니다: ${e.message}"
+                    _uiState.value = _uiState.value.copy(
+                        error = "배너 이미지 업로드에 실패했습니다: ${e.message}"
+                    )
                 }
         }
     }
 
     fun deleteProject(onSuccess: () -> Unit) {
         viewModelScope.launch {
-            _error.value = null
+            _uiState.value = _uiState.value.copy(error = null)
             
             projectRepository.deleteProject(projectId)
                 .onSuccess {
@@ -144,37 +162,45 @@ class ProjectDetailViewModel(
                 }
                 .onFailure { e ->
                     Log.e(TAG, "프로젝트 삭제 실패", e)
-                    _error.value = "프로젝트 삭제에 실패했습니다: ${e.message}"
+                    _uiState.value = _uiState.value.copy(
+                        error = "프로젝트 삭제에 실패했습니다: ${e.message}"
+                    )
                 }
         }
     }
 
     // Connector 관련 (로컬 상태만 관리 - API에서는 지원하지 않음)
     fun addConnector(type: ProjectConnectorType, name: String, url: String) {
-        val currentProject = _project.value ?: return
+        val currentProject = _uiState.value.project ?: return
         val connector = ProjectConnector(type = type, name = name, url = url)
         val updatedConnectors = (currentProject.connector ?: emptyList()) + connector
-        _project.value = currentProject.copy(connector = updatedConnectors)
+        _uiState.value = _uiState.value.copy(
+            project = currentProject.copy(connector = updatedConnectors)
+        )
     }
 
     fun updateConnector(oldConnector: ProjectConnector, newConnector: ProjectConnector) {
-        val currentProject = _project.value ?: return
+        val currentProject = _uiState.value.project ?: return
         val connectors = currentProject.connector?.toMutableList() ?: return
         val index = connectors.indexOfFirst { 
             it.type == oldConnector.type && it.url == oldConnector.url 
         }
         if (index != -1) {
             connectors[index] = newConnector
-            _project.value = currentProject.copy(connector = connectors)
+            _uiState.value = _uiState.value.copy(
+                project = currentProject.copy(connector = connectors)
+            )
         }
     }
 
     fun removeConnector(connector: ProjectConnector) {
-        val currentProject = _project.value ?: return
+        val currentProject = _uiState.value.project ?: return
         val connectors = currentProject.connector?.filter { 
             !(it.type == connector.type && it.url == connector.url)
         }
-        _project.value = currentProject.copy(connector = connectors)
+        _uiState.value = _uiState.value.copy(
+            project = currentProject.copy(connector = connectors)
+        )
     }
 
     suspend fun getShareLink(): String {
@@ -189,25 +215,31 @@ class ProjectDetailViewModel(
      */
     fun getAiSuggestions(keywordName: String) {
         viewModelScope.launch {
-            _isAiLoading.value = true
-            _aiSuggestions.value = emptyList()
+            _uiState.value = _uiState.value.copy(
+                isAiLoading = true,
+                aiSuggestions = emptyList()
+            )
             
             projectRepository.generateWordDescription(keywordName)
                 .onSuccess { suggestions ->
-                    _aiSuggestions.value = suggestions
                     Log.d(TAG, "AI 제안 ${suggestions.size}개 수신")
+                    _uiState.value = _uiState.value.copy(
+                        aiSuggestions = suggestions,
+                        isAiLoading = false
+                    )
                 }
                 .onFailure { e ->
                     Log.e(TAG, "AI 제안 실패", e)
-                    _error.value = "AI 제안을 가져오는데 실패했습니다"
+                    _uiState.value = _uiState.value.copy(
+                        error = "AI 제안을 가져오는데 실패했습니다",
+                        isAiLoading = false
+                    )
                 }
-            
-            _isAiLoading.value = false
         }
     }
 
     fun clearAiSuggestions() {
-        _aiSuggestions.value = emptyList()
+        _uiState.value = _uiState.value.copy(aiSuggestions = emptyList())
     }
 
     /**
@@ -215,20 +247,22 @@ class ProjectDetailViewModel(
      */
     fun aiAutofill(query: String, count: Int = 50, onComplete: (List<Word>) -> Unit) {
         viewModelScope.launch {
-            _isAiLoading.value = true
+            _uiState.value = _uiState.value.copy(isAiLoading = true)
             
             projectRepository.generateAutofill(query, count)
                 .onSuccess { words ->
                     Log.d(TAG, "AI 자동채우기 ${words.size}개 키워드 생성")
+                    _uiState.value = _uiState.value.copy(isAiLoading = false)
                     onComplete(words)
                 }
                 .onFailure { e ->
                     Log.e(TAG, "AI 자동채우기 실패", e)
-                    _error.value = "AI 자동채우기에 실패했습니다"
+                    _uiState.value = _uiState.value.copy(
+                        error = "AI 자동채우기에 실패했습니다",
+                        isAiLoading = false
+                    )
                     onComplete(emptyList())
                 }
-            
-            _isAiLoading.value = false
         }
     }
 
@@ -237,19 +271,24 @@ class ProjectDetailViewModel(
      */
     fun addWordsFromAi(words: List<Word>) {
         viewModelScope.launch {
-            _error.value = null
+            _uiState.value = _uiState.value.copy(error = null)
             
-            val currentProject = _project.value ?: return@launch
+            val currentProject = _uiState.value.project ?: return@launch
             val updatedWords = currentProject.word + words
             
             projectRepository.updateProject(projectId, keywords = updatedWords)
                 .onSuccess { pack ->
-                    _project.value = pack
-                    Log.d(TAG, "${words.size}개 키워드 일괄 추가 완료")
+                    Log.d(TAG, "${words.size}개 키워드 일괄 추가 완료, words=${pack.word.size}")
+                    _uiState.value = _uiState.value.copy(
+                        project = pack,
+                        error = null
+                    )
                 }
                 .onFailure { e ->
                     Log.e(TAG, "키워드 일괄 추가 실패", e)
-                    _error.value = "키워드 추가에 실패했습니다"
+                    _uiState.value = _uiState.value.copy(
+                        error = "키워드 추가에 실패했습니다"
+                    )
                 }
         }
     }

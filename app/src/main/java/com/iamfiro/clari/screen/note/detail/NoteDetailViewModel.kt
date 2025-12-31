@@ -172,35 +172,68 @@ class NoteDetailViewModel(
 
         if (wordIndex >= 0 && wordIndex != lastAutoDetectedWordIndex && _uiState.value.isPlaying) {
             lastAutoDetectedWordIndex = wordIndex
-            words?.getOrNull(wordIndex)?.let { currentWord ->
-                checkAndAddKeyword(currentWord.text)
+            words?.let { allWords ->
+                val windowSize = 5
+                val startIdx = (wordIndex - windowSize).coerceAtLeast(0)
+                val endIdx = (wordIndex + 1).coerceAtMost(allWords.size)
+                
+                val recentWords = allWords.subList(startIdx, endIdx)
+                    .filter { !it.isSpacing }
+                    .map { it.text }
+                
+                val combinedText = recentWords.joinToString("")
+                checkAndAddKeyword(combinedText)
+                
+                allWords.getOrNull(wordIndex)?.let { currentWord ->
+                    if (!currentWord.isSpacing) {
+                        checkAndAddKeyword(currentWord.text)
+                    }
+                }
             }
         }
     }
 
     private fun checkAndAddKeyword(wordText: String) {
-        val normalizedWord = wordText.lowercase().trim()
-        val wordWithoutSpaces = normalizedWord.replace("\\s+".toRegex(), "")
-
-        _uiState.value.availableKeywords.forEach { (keywordKey, term) ->
-            val keywordWithoutSpaces = keywordKey.replace("\\s+".toRegex(), "")
-
-            val exactMatch = normalizedWord.contains(keywordKey)
-
-            val spaceIgnoredMatch = wordWithoutSpaces.contains(keywordWithoutSpaces)
-
-            val words = keywordKey.split("\\s+".toRegex())
-            val partialMatch = if (words.size > 1) {
-                words.all { word -> normalizedWord.contains(word) }
-            } else {
-                false
-            }
+        val normalizedText = normalizeForSearch(wordText)
+        val matchedTermIds = mutableSetOf<String>()
+        
+        _uiState.value.availableKeywords.forEach { (searchKey, term) ->
+            if (matchedTermIds.contains(term.id)) return@forEach
             
-            if (exactMatch || spaceIgnoredMatch || partialMatch) {
+            if (matchKeyword(searchKey, normalizedText, wordText.lowercase(), term.keyword.name)) {
+                matchedTermIds.add(term.id)
                 addTermToDisplay(term)
-                Log.d(TAG, "키워드 매칭: '${term.keyword.name}' (텍스트: '$wordText', 정확:$exactMatch, 띄어쓰기무시:$spaceIgnoredMatch, 부분:$partialMatch)")
+                Log.d(TAG, "키워드 매칭: '${term.keyword.name}' (검색키: '$searchKey', 텍스트: '$wordText')")
             }
         }
+    }
+    
+    private fun matchKeyword(searchKey: String, normalizedText: String, originalText: String, originalKeyword: String): Boolean {
+        if (searchKey.length < 2) return false
+        
+        if (normalizedText.contains(searchKey)) {
+            return true
+        }
+        
+        val originalKeywordNormalized = normalizeForSearch(originalKeyword)
+        if (normalizedText.contains(originalKeywordNormalized)) {
+            return true
+        }
+        
+        val originalTextNoSpace = originalText.replace(Regex("\\s+"), "")
+        if (originalTextNoSpace.contains(searchKey)) {
+            return true
+        }
+        
+        if (searchKey.length >= 4) {
+            val keyWithOptionalSpaces = searchKey.toList().joinToString("\\s*")
+            val spacePattern = Regex(keyWithOptionalSpaces, RegexOption.IGNORE_CASE)
+            if (spacePattern.containsMatchIn(originalText)) {
+                return true
+            }
+        }
+        
+        return false
     }
 
     private fun addTermToDisplay(term: DetectedTerm) {
@@ -227,9 +260,6 @@ class NoteDetailViewModel(
     }
 
     fun onWordClicked(word: TranscriptWord) {
-        checkAndAddKeyword(word.text)
-        
-        // 해당 위치로 이동
         seekTo(word.startMs)
         if (!_uiState.value.isPlaying && _uiState.value.isMediaReady) {
             togglePlayPause()
@@ -237,14 +267,6 @@ class NoteDetailViewModel(
     }
 
     fun onTranscriptClicked(transcript: TranscriptLine) {
-        val words = _uiState.value.note?.words?.filter { word ->
-            word.startMs >= transcript.startMs && word.startMs < transcript.endMs
-        } ?: emptyList()
-
-        words.forEach { word ->
-            checkAndAddKeyword(word.text)
-        }
-
         seekToTranscript(transcript)
     }
 
@@ -332,16 +354,18 @@ class NoteDetailViewModel(
                 val keywordMap = mutableMapOf<String, DetectedTerm>()
                 packs.forEach { pack ->
                     pack.word.forEach { word ->
-                        val normalizedName = word.name.lowercase().trim()
-                        if (!keywordMap.containsKey(normalizedName)) {
-                            keywordMap[normalizedName] = DetectedTerm(
-                                id = normalizedName,
-                                keyword = KeywordHit(
-                                    name = word.name,
-                                    description = word.meaning
-                                ),
-                                detectedAt = 0L
-                            )
+                        val term = DetectedTerm(
+                            id = word.name.lowercase().trim(),
+                            keyword = KeywordHit(
+                                name = word.name,
+                                description = word.meaning
+                            ),
+                            detectedAt = 0L
+                        )
+                        
+                        val searchTargets = buildSearchTargets(word)
+                        searchTargets.forEach { target ->
+                            keywordMap[target] = term
                         }
                     }
                 }
@@ -358,6 +382,40 @@ class NoteDetailViewModel(
                 _uiState.value = _uiState.value.copy(isLoadingKeywords = false)
             }
         }
+    }
+    
+    private fun buildSearchTargets(word: com.iamfiro.clari.feature.project.model.Word): List<String> {
+        val targets = mutableListOf<String>()
+        
+        val baseName = extractBaseName(word.name)
+        targets.add(normalizeForSearch(baseName))
+        
+        word.koreanPronunciation?.let { pronunciation ->
+            if (pronunciation.isNotBlank()) {
+                targets.add(normalizeForSearch(pronunciation))
+            }
+        }
+        
+        word.synonyms?.forEach { synonym ->
+            if (synonym.isNotBlank()) {
+                val baseSynonym = extractBaseName(synonym)
+                targets.add(normalizeForSearch(baseSynonym))
+            }
+        }
+        
+        return targets.distinct()
+    }
+    
+    private fun extractBaseName(name: String): String {
+        return name.replace(Regex("\\s*\\([^)]*\\)\\s*"), " ")
+            .replace(Regex("\\s*\\[[^]]*]\\s*"), " ")
+            .trim()
+    }
+    
+    private fun normalizeForSearch(text: String): String {
+        return text.lowercase()
+            .replace(Regex("[\\s\\-_]+"), "")
+            .trim()
     }
 
     fun updateNoteName(newName: String) {
@@ -414,6 +472,12 @@ class NoteDetailViewModel(
 
     // AI Transcript Explanation
     fun explainTranscript(transcriptText: String) {
+        if (_uiState.value.isPlaying) {
+            mediaPlayer?.pause()
+            _uiState.value = _uiState.value.copy(isPlaying = false)
+            stopPositionUpdates()
+        }
+        
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 showTranscriptExplanation = true,
@@ -422,19 +486,20 @@ class NoteDetailViewModel(
                 isLoadingExplanation = true
             )
             
-            try {
-                val explanation = aiExplanationRepository.explainTranscript(transcriptText)
-                _uiState.value = _uiState.value.copy(
-                    transcriptExplanation = explanation,
-                    isLoadingExplanation = false
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "AI 설명 생성 실패", e)
-                _uiState.value = _uiState.value.copy(
-                    transcriptExplanation = "설명을 생성하는 중 오류가 발생했습니다.",
-                    isLoadingExplanation = false
-                )
-            }
+            aiExplanationRepository.explainTranscript(noteId, transcriptText)
+                .onSuccess { response ->
+                    _uiState.value = _uiState.value.copy(
+                        transcriptExplanation = response.explanation,
+                        isLoadingExplanation = false
+                    )
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "AI 설명 생성 실패", e)
+                    _uiState.value = _uiState.value.copy(
+                        transcriptExplanation = "설명을 생성하는 중 오류가 발생했습니다.",
+                        isLoadingExplanation = false
+                    )
+                }
         }
     }
     

@@ -1,33 +1,30 @@
 package com.iamfiro.clari.feature.note.ui
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -67,12 +64,11 @@ fun TranscriptItem(
         modifier = modifier
             .fillMaxWidth()
             .background(backgroundColor)
-            .padding(horizontal = Dimens.ScreenPadding)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongPress
             )
-            .padding(vertical = 12.dp)
+            .padding(horizontal = Dimens.ScreenPadding, vertical = 12.dp)
     ) {
         SpeakerAvatar(speaker = transcript.speaker,)
 
@@ -111,12 +107,10 @@ fun TranscriptItem(
 
                 val annotatedString = buildAnnotatedString {
                     words.forEachIndexed { index, word ->
-                        // 현재 재생 중인 단어인지 확인 (startMs와 endMs가 일치하는지 확인)
                         val isCurrentWord = currentWord != null &&
                                 word.startMs == currentWord.startMs &&
                                 word.endMs == currentWord.endMs
 
-                        // 클릭 가능하도록 annotation 추가
                         pushStringAnnotation(
                             tag = "WORD",
                             annotation = index.toString()
@@ -140,23 +134,39 @@ fun TranscriptItem(
                     }
                 }
 
-                ClickableText(
+                var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+                
+                BasicText(
                     text = annotatedString,
                     style = TextStyle(
                         lineHeight = 22.sp,
                         fontSize = 15.sp
                     ),
-                    onClick = { offset ->
-                        annotatedString.getStringAnnotations(
-                            tag = "WORD",
-                            start = offset,
-                            end = offset
-                        ).firstOrNull()?.let { annotation ->
-                            val wordIndex = annotation.item.toIntOrNull()
-                            if (wordIndex != null && wordIndex in words.indices) {
-                                onWordClick(words[wordIndex])
-                            }
-                        }
+                    modifier = Modifier
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onTap = { offset ->
+                                    textLayoutResult?.let { layoutResult ->
+                                        val position = layoutResult.getOffsetForPosition(offset)
+                                        annotatedString.getStringAnnotations(
+                                            tag = "WORD",
+                                            start = position,
+                                            end = position
+                                        ).firstOrNull()?.let { annotation ->
+                                            val wordIndex = annotation.item.toIntOrNull()
+                                            if (wordIndex != null && wordIndex in words.indices) {
+                                                onWordClick(words[wordIndex])
+                                            }
+                                        }
+                                    }
+                                },
+                                onLongPress = {
+                                    onLongPress()
+                                }
+                            )
+                        },
+                    onTextLayout = { layoutResult ->
+                        textLayoutResult = layoutResult
                     }
                 )
             } else {

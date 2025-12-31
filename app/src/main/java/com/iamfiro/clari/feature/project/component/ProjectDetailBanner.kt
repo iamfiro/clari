@@ -25,9 +25,9 @@ import com.iamfiro.clari.core.ui.theme.Dimens
 @Composable
 fun ProjectDetailBanner(
     thumbnail: String?,
-    onBannerClick: () -> Unit,
-    onShareClick: () -> Unit,
-    onDeleteClick: () -> Unit,
+    onBannerClick: (() -> Unit)?,
+    onShareClick: (() -> Unit)?,
+    onDeleteClick: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     val backStack = LocalNavBackStack.current
@@ -39,7 +39,13 @@ fun ProjectDetailBanner(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(250.dp)
-                .clickable(onClick = onBannerClick),
+                .then(
+                    if (onBannerClick != null) {
+                        Modifier.clickable(onClick = onBannerClick)
+                    } else {
+                        Modifier
+                    }
+                ),
             contentScale = ContentScale.Crop,
             placeholder = painterResource(R.drawable.sample_banner),
             error = painterResource(R.drawable.sample_banner)
@@ -63,20 +69,24 @@ fun ProjectDetailBanner(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                IconButton(onClick = onShareClick) {
-                    Icon(
-                        painter = painterResource(R.drawable.share),
-                        contentDescription = "공유",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
+                if (onShareClick != null) {
+                    IconButton(onClick = onShareClick) {
+                        Icon(
+                            painter = painterResource(R.drawable.share),
+                            contentDescription = "공유",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
-                IconButton(onClick = onDeleteClick) {
-                    Icon(
-                        painter = painterResource(R.drawable.trash),
-                        contentDescription = "삭제",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(22.dp)
-                    )
+                if (onDeleteClick != null) {
+                    IconButton(onClick = onDeleteClick) {
+                        Icon(
+                            painter = painterResource(R.drawable.trash),
+                            contentDescription = "삭제",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
             }
         }

@@ -85,7 +85,9 @@ class ProjectRepository {
         return try {
             val request = AddProjectWordRequest(
                 name = word.name,
-                description = word.meaning
+                description = word.meaning,
+                koreanPronunciation = word.koreanPronunciation,
+                synonyms = word.synonyms
             )
             val response = ApiClient.projectAPI.addProjectWord(packId, request)
             val pack = KeywordPackMapper.fromDto(response.pack)
@@ -160,6 +162,30 @@ class ProjectRepository {
             val words = response.keywords.map { KeywordPackMapper.keywordToWord(it) }
             Result.success(words)
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun cloudSave(packId: String): Result<String> {
+        return try {
+            Log.d(TAG, "Cloud Save 시작: packId=$packId")
+            val response = ApiClient.projectAPI.cloudSave(packId)
+            Log.d(TAG, "Cloud Save 성공: ${response.message}")
+            Result.success(response.message)
+        } catch (e: Exception) {
+            Log.e(TAG, "Cloud Save 실패: packId=$packId", e)
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun cloudUnsave(packId: String): Result<String> {
+        return try {
+            Log.d(TAG, "Cloud Unsave 시작: packId=$packId")
+            val response = ApiClient.projectAPI.cloudUnsave(packId)
+            Log.d(TAG, "Cloud Unsave 성공: ${response.message}")
+            Result.success(response.message)
+        } catch (e: Exception) {
+            Log.e(TAG, "Cloud Unsave 실패: packId=$packId", e)
             Result.failure(e)
         }
     }

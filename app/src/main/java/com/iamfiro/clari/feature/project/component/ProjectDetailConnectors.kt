@@ -20,9 +20,9 @@ import com.iamfiro.clari.feature.project.model.ProjectConnector
 @Composable
 fun ProjectDetailConnectors(
     connectors: List<ProjectConnector>?,
-    onAddClick: () -> Unit,
-    onEditClick: (ProjectConnector) -> Unit,
-    onDeleteClick: (ProjectConnector) -> Unit,
+    onAddClick: (() -> Unit)?,
+    onEditClick: ((ProjectConnector) -> Unit)?,
+    onDeleteClick: ((ProjectConnector) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -35,18 +35,20 @@ fun ProjectDetailConnectors(
             modifier = Modifier.fillMaxWidth()
         ) {
             SectionTitle("외부 연결")
-            OutlinedButton(
-                onClick = onAddClick,
-                modifier = Modifier.height(32.dp)
-            ) {
-                Text("추가", style = MaterialTheme.typography.labelMedium)
+            if (onAddClick != null) {
+                OutlinedButton(
+                    onClick = onAddClick,
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Text("추가", style = MaterialTheme.typography.labelMedium)
+                }
             }
         }
         connectors?.forEach { connector ->
             ConnectorCard(
                 connector = connector,
-                onEdit = { onEditClick(connector) },
-                onDelete = { onDeleteClick(connector) }
+                onEdit = if (onEditClick != null) {{ onEditClick(connector) }} else null,
+                onDelete = if (onDeleteClick != null) {{ onDeleteClick(connector) }} else null
             )
         }
         if (connectors.isNullOrEmpty()) {

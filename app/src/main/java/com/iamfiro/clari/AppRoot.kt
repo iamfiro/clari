@@ -1,5 +1,6 @@
 package com.iamfiro.clari
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -8,7 +9,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -28,7 +28,12 @@ fun AppRoot() {
 
     LaunchedEffect(Unit) {
         val isLoggedIn = tokenManager.isLoggedIn()
-        initialScreen = if (isLoggedIn) Screen.Home else Screen.Onboard
+        val isActive = tokenManager.getIsActive()
+        initialScreen = when {
+            !isLoggedIn -> Screen.Onboard
+            !isActive -> Screen.RegisterContinue
+            else -> Screen.Home
+        }
     }
     
     val backStack: NavBackStack<NavKey>? = if (initialScreen != null) {
@@ -40,6 +45,15 @@ fun AppRoot() {
     val currentScreen = remember(backStack, initialScreen) {
         derivedStateOf {
             backStack?.lastOrNull() as? Screen ?: initialScreen ?: Screen.Onboard
+        }
+    }
+    
+    LaunchedEffect(backStack) {
+        if (backStack != null) {
+            MainActivity.deepLinkFlow.collect { deepLinkData ->
+                Log.d("AppRoot", "Deep link received: projectId=${deepLinkData.projectId}")
+                backStack.add(Screen.ProjectDetail(deepLinkData.projectId))
+            }
         }
     }
 

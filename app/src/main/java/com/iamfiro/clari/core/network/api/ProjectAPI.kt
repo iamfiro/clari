@@ -5,6 +5,7 @@ import com.iamfiro.clari.core.network.dto.AutocompleteRequest
 import com.iamfiro.clari.core.network.dto.AutocompleteResponse
 import com.iamfiro.clari.core.network.dto.AutofillRequest
 import com.iamfiro.clari.core.network.dto.AutofillResponse
+import com.iamfiro.clari.core.network.dto.CloudSaveResponse
 import com.iamfiro.clari.core.network.dto.CreateKeywordPackRequest
 import com.iamfiro.clari.core.network.dto.ProjectPackResponse
 import com.iamfiro.clari.core.network.dto.ProjectPacksResponse
@@ -49,4 +50,10 @@ interface ProjectAPI {
     
     @POST("keywordpacks/ai/autofill")
     suspend fun generateAutofill(@Body request: AutofillRequest): AutofillResponse
+    
+    @POST("keywordpacks/{id}/cloud-save")
+    suspend fun cloudSave(@Path("id") id: String): CloudSaveResponse
+    
+    @DELETE("keywordpacks/{id}/cloud-save")
+    suspend fun cloudUnsave(@Path("id") id: String): MessageResponse
 }

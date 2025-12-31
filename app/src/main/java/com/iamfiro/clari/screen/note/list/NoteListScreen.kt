@@ -18,6 +18,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.iamfiro.clari.core.ui.component.Header
@@ -48,23 +49,28 @@ fun NoteListScreen() {
         .groupBy { it.createdAt.toLocalDate() }
         .toSortedMap(compareByDescending { it })
 
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
     Scaffold(
         bottomBar = { NavBar() },
         floatingActionButton = { NewRecordingFloating() }
     ) { innerPadding ->
-        Column(Modifier.padding(innerPadding)) {
-            Header("노트")
-            PullToRefreshBox(
-                isRefreshing = isLoading,
-                onRefresh = { viewModel.refresh() },
-                modifier = Modifier.fillMaxSize()
-            ) {
+        PullToRefreshBox(
+            isRefreshing = isLoading,
+            onRefresh = { viewModel.refresh() },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                Header("노트")
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(
-                        horizontal = Dimens.ScreenPadding,
-                        vertical = 8.dp
-                    )
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = Dimens.ScreenPadding, vertical = 8.dp)
                 ) {
                 if (isLoading) {
                     item { NoteCardSkeleton() }

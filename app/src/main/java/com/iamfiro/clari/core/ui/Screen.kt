@@ -7,6 +7,9 @@ import kotlinx.serialization.Serializable
 sealed interface Screen : NavKey {
     @Serializable
     data object Onboard : Screen
+    
+    @Serializable
+    data object RegisterContinue : Screen
 
     @Serializable
     data object Home : Screen
@@ -26,7 +29,6 @@ sealed interface Screen : NavKey {
     @Serializable
     data class ProjectDetail(val projectId: String) : Screen
 
-    // Recording
     @Serializable
     data class LanguageSelectScreen(val projectId: String) : Screen
 
@@ -41,7 +43,6 @@ sealed interface Screen : NavKey {
         val externalResourceIds: List<String> = emptyList()
     ) : Screen
 
-    // External Resources
     @Serializable
     data object ExternalResourceList : Screen
 

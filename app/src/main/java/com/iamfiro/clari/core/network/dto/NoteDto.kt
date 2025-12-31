@@ -53,8 +53,6 @@ data class UpdateNoteRequest(
     val speakers: List<SpeakerDto>? = null
 )
 
-// Transcript content (JSON stored in content field)
-// 새로운 content 구조 지원 (words 배열 기반)
 @Serializable
 data class TranscriptContent(
     val language_code: String? = null,
@@ -65,7 +63,6 @@ data class TranscriptContent(
     val duration_seconds: Int? = null,
     val sample_rate: Int? = null,
     val transcribed_at: String? = null,
-    // 레거시 지원
     val segments: List<TranscriptSegment> = emptyList()
 )
 
@@ -74,7 +71,7 @@ data class TranscriptWord(
     val text: String,
     val start: Double,
     val end: Double,
-    val type: String, // "word" or "spacing"
+    val type: String,
     val speaker_id: String,
     val logprob: Double = 0.0
 )
@@ -85,5 +82,25 @@ data class TranscriptSegment(
     val start: Double,
     val end: Double,
     val text: String
+)
+
+@Serializable
+data class AiExplanationRequest(
+    val sentence: String
+)
+
+@Serializable
+data class AiExplanationResponse(
+    val sentence: String,
+    val explanation: String,
+    val context: AiExplanationContext? = null,
+    val generatedAt: String? = null
+)
+
+@Serializable
+data class AiExplanationContext(
+    val userRole: String? = null,
+    val noteTitle: String? = null,
+    val transcriptLength: Int? = null
 )
 

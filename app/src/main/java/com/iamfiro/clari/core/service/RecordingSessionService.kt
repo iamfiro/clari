@@ -278,20 +278,47 @@ class RecordingSessionService(private val tokenManager: TokenManager) {
                         errorElement == null -> "알 수 없는 오류"
                         errorElement is kotlinx.serialization.json.JsonPrimitive -> errorElement.content
                         errorElement is kotlinx.serialization.json.JsonObject -> {
-
                             val message = errorElement["message"]?.jsonPrimitive?.content
                             val code = errorElement["code"]?.jsonPrimitive?.content
+                            val details = errorElement["details"]?.jsonPrimitive?.content
                             when {
-                                message != null && code != null -> "[$code] $message"
+                                message != null && code != null && details != null -> 
+                                    "[$code] $message - $details"
+                                message != null && code != null -> 
+                                    "[$code] $message"
+                                message != null && details != null -> 
+                                    "$message - $details"
                                 message != null -> message
                                 code != null -> "오류 코드: $code"
-                                else -> errorElement.toString()
+                                else -> {
+                                    try {
+                                        Json { prettyPrint = true }.encodeToString(
+                                            kotlinx.serialization.json.JsonObject.serializer(),
+                                            errorElement
+                                        )
+                                    } catch (e: Exception) {
+                                        errorElement.toString()
+                                    }
+                                }
                             }
                         }
-                        else -> errorElement.toString()
+                        else -> {
+                            try {
+                                errorElement.toString()
+                            } catch (e: Exception) {
+                                "오류 파싱 실패"
+                            }
+                        }
                     }
                     Log.e(TAG, "❌ [ERROR] $err")
-                    Log.e(TAG, "원본 에러 데이터: $errorElement")
+                    Log.e(TAG, "원본 에러 데이터: ${try {
+                        Json { prettyPrint = true }.encodeToString(
+                            kotlinx.serialization.json.JsonElement.serializer(),
+                            errorElement ?: obj
+                        )
+                    } catch (e: Exception) {
+                        errorElement?.toString() ?: "null"
+                    }}")
                     _connectionState.value = SessionConnectionState.Error(err)
                 }
 

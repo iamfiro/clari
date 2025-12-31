@@ -122,18 +122,15 @@ class AudioRecorderService(private val context: Context) {
                     
                     if (readResult > 0) {
                         chunkCount++
-                        
-                        // Short 배열을 Byte 배열로 변환 (Little Endian)
+
                         val byteBuffer = ByteArray(readResult * 2)
                         for (i in 0 until readResult) {
                             byteBuffer[i * 2] = (buffer[i].toInt() and 0xFF).toByte()
                             byteBuffer[i * 2 + 1] = (buffer[i].toInt() shr 8 and 0xFF).toByte()
                         }
-                        
-                        // Base64 인코딩
+
                         val base64Audio = Base64.encodeToString(byteBuffer, Base64.NO_WRAP)
-                        
-                        // 매 50번째 청크마다 상세 로그
+
                         if (chunkCount % 50 == 1) {
                             Log.d(TAG, "========== 오디오 청크 #$chunkCount ==========")
                             Log.d(TAG, "읽은 샘플 수: $readResult")

@@ -480,6 +480,9 @@ fun ShareProjectBottomSheet(
     visible: Boolean,
     onDismiss: () -> Unit,
     shareLink: String,
+    isPublic: Boolean,
+    isTogglingPublic: Boolean = false,
+    onTogglePublic: () -> Unit,
     onCopyLink: () -> Unit
 ) {
     BottomSheetWithHeader(
@@ -489,19 +492,132 @@ fun ShareProjectBottomSheet(
         actions = listOf(
             BottomSheetAction.Primary(
                 text = "링크 복사",
+                enabled = isPublic,
                 onClick = onCopyLink
             )
         )
     ) {
-        OutlinedTextField(
-            value = shareLink,
-            onValueChange = {},
-            label = { Text("공유 링크") },
-            modifier = Modifier.fillMaxWidth(),
-            readOnly = true,
-            singleLine = true
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    Text(
+                        "공개 설정",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        if (isPublic) "누구나 링크로 접근 가능" else "나만 볼 수 있음",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+                
+                androidx.compose.material3.Switch(
+                    checked = isPublic,
+                    onCheckedChange = { onTogglePublic() },
+                    enabled = !isTogglingPublic
+                )
+            }
+            
+            if (isPublic) {
+                OutlinedTextField(
+                    value = shareLink,
+                    onValueChange = {},
+                    label = { Text("공유 링크") },
+                    modifier = Modifier.fillMaxWidth(),
+                    readOnly = true,
+                    singleLine = true
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        "프로젝트를 공개로 설정하면 링크가 생성됩니다",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
+        }
     }
+}
+
+@Composable
+fun SavedProjectInfoSection(
+    publisherName: String,
+    onUnsave: () -> Unit,
+    isUnsaving: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+            .padding(16.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column {
+                Text(
+                    "저장한 프로젝트",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    "by $publisherName",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+            
+            OutlinedButton(
+                onClick = onUnsave,
+                enabled = !isUnsaving,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                if (isUnsaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("저장 해제", style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun UnsaveProjectBottomSheet(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    ConfirmBottomSheet(
+        visible = visible,
+        onDismiss = onDismiss,
+        title = "저장 해제",
+        message = "이 프로젝트를 저장 목록에서 제거하시겠습니까?",
+        confirmText = "저장 해제",
+        cancelText = "취소",
+        isDestructive = true,
+        onConfirm = onConfirm
+    )
 }
 
 @Composable

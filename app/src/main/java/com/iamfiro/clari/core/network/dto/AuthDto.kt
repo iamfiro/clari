@@ -18,7 +18,21 @@ data class UserDto(
     val id: String,
     val email: String,
     val name: String? = null,
-    val profileUrl: String? = null
+    val profileUrl: String? = null,
+    val role: String? = null,
+    val isActive: Boolean = false,
+    val savedKeywordPackIds: List<String> = emptyList()
+)
+
+@Serializable
+data class RegisterContinueRequest(
+    val role: String,
+    val name: String? = null
+)
+
+@Serializable
+data class RegisterContinueResponse(
+    val user: UserDto
 )
 
 @Serializable

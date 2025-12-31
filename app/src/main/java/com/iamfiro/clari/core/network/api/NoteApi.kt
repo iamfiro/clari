@@ -1,5 +1,7 @@
 package com.iamfiro.clari.core.network.api
 
+import com.iamfiro.clari.core.network.dto.AiExplanationRequest
+import com.iamfiro.clari.core.network.dto.AiExplanationResponse
 import com.iamfiro.clari.core.network.dto.MessageResponse
 import com.iamfiro.clari.core.network.dto.NoteResponse
 import com.iamfiro.clari.core.network.dto.NotesResponse
@@ -8,6 +10,7 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -30,6 +33,12 @@ interface NoteApi {
     
     @DELETE("notes/{id}")
     suspend fun deleteNote(@Path("id") id: String): MessageResponse
+    
+    @POST("notes/{id}/ai/explanation")
+    suspend fun getAiExplanation(
+        @Path("id") id: String,
+        @Body request: AiExplanationRequest
+    ): AiExplanationResponse
 }
 
 

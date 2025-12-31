@@ -10,6 +10,8 @@ data class TokenEntity(
     val userId: String? = null,
     val userEmail: String? = null,
     val userName: String? = null,
-    val userProfileUrl: String? = null
+    val userProfileUrl: String? = null,
+    val userRole: String? = null,
+    val isActive: Boolean = false
 )
 

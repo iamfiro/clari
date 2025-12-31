@@ -22,13 +22,18 @@ data class ProjectDto(
     val createdAt: String,
     val updatedAt: String,
     val isPublic: Boolean,
-    val previewImageUrl: String? = null
+    val previewImageUrl: String? = null,
+    val authorId: String? = null,
+    val isOwned: Boolean = true,
+    val isSaved: Boolean = false
 )
 
 @Serializable
 data class ProjectWordDTO(
     val name: String,
-    val description: String
+    val description: String,
+    val koreanPronunciation: String? = null,
+    val synonyms: List<String>? = null
 )
 
 @Serializable
@@ -41,7 +46,9 @@ data class CreateKeywordPackRequest(
 @Serializable
 data class AddProjectWordRequest(
     val name: String,
-    val description: String
+    val description: String,
+    val koreanPronunciation: String? = null,
+    val synonyms: List<String>? = null
 )
 
 @Serializable
@@ -52,7 +59,6 @@ data class UpdateProjectRequest(
     val previewImageUrl: String? = null
 )
 
-// "Lambda"라는 단어를 서버에 보냈을때 "AWS의 서버리스 컴퓨팅 서비스입니다." 와 같은 단어 설명을 여러개 받음
 @Serializable
 data class AutocompleteRequest(
     val name: String
@@ -63,7 +69,6 @@ data class AutocompleteResponse(
     val suggestions: List<String>
 )
 
-// "AWS 관련 단어 찾아줘" 요청하면 단어 n개를 보내줌
 @Serializable
 data class AutofillRequest(
     val query: String,
@@ -72,7 +77,35 @@ data class AutofillRequest(
 
 @Serializable
 data class AutofillResponse(
-    val keywords: List<ProjectWordDTO>
+    val keywords: List<ProjectWordDTO>,
+    val stats: AutofillStats? = null
+)
+
+@Serializable
+data class AutofillStats(
+    val perplexityTime: Long? = null,
+    val gptTime: Long? = null,
+    val pronunciationTime: Long? = null,
+    val synonymTime: Long? = null,
+    val totalTime: Long? = null,
+    val requestedCount: Int? = null,
+    val actualCount: Int? = null,
+    val withPronunciation: Int? = null,
+    val withSynonyms: Int? = null
+)
+
+@Serializable
+data class CloudSaveResponse(
+    val message: String,
+    val pack: CloudSavePackInfo? = null
+)
+
+@Serializable
+data class CloudSavePackInfo(
+    val id: String,
+    val name: String,
+    val isOwned: Boolean,
+    val isSaved: Boolean
 )
 
 

@@ -11,34 +11,42 @@ object KeywordPackMapper {
         val words = dto.words.map { keyword ->
             Word(
                 name = keyword.name,
-                meaning = keyword.description
+                meaning = keyword.description,
+                koreanPronunciation = keyword.koreanPronunciation,
+                synonyms = keyword.synonyms
             )
         }
         android.util.Log.d("KeywordPackMapper", "매핑 완료: words.size=${words.size}")
         return Project(
             id = dto.id,
             name = dto.name,
-            description = "", // API에서 description 미제공
-            publisherId = "user",
+            description = "",
+            publisherId = dto.authorId ?: "user",
             publisherName = "사용자",
             thumbnail = dto.previewImageUrl ?: "",
             word = words,
             isDownloaded = true,
             downloadCount = 0,
             connector = null,
-            isPublic = dto.isPublic
+            isPublic = dto.isPublic,
+            isOwned = dto.isOwned,
+            isSaved = dto.isSaved
         )
     }
     fun keywordToWord(dto: ProjectWordDTO): Word {
         return Word(
             name = dto.name,
-            meaning = dto.description
+            meaning = dto.description,
+            koreanPronunciation = dto.koreanPronunciation,
+            synonyms = dto.synonyms
         )
     }
     fun wordToKeyword(word: Word): ProjectWordDTO {
         return ProjectWordDTO(
             name = word.name,
-            description = word.meaning
+            description = word.meaning,
+            koreanPronunciation = word.koreanPronunciation,
+            synonyms = word.synonyms
         )
     }
 

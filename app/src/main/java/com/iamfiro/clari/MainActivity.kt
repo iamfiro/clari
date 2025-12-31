@@ -1,5 +1,6 @@
 package com.iamfiro.clari
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -14,22 +15,32 @@ import androidx.lifecycle.lifecycleScope
 import com.iamfiro.clari.core.network.ApiClient
 import com.iamfiro.clari.core.service.FcmTokenManager
 import com.skills.app.core.ui.theme.ClariTheme
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+
+data class DeepLinkData(
+    val projectId: String,
+    val source: String? = null
+)
 
 class MainActivity : ComponentActivity() {
     
     companion object {
         private const val TAG = "MainActivity"
+        
+        private val _deepLinkFlow = MutableSharedFlow<DeepLinkData>(replay = 1)
+        val deepLinkFlow = _deepLinkFlow.asSharedFlow()
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // API 클라이언트 초기화
         ApiClient.initialize(applicationContext)
         
-        // FCM 토큰 가져오기 및 서버 전송
         initializeFcm()
+        
+        handleIntent(intent)
         
         enableEdgeToEdge()
 
@@ -46,49 +57,47 @@ class MainActivity : ComponentActivity() {
         }
     }
     
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+    
+    private fun handleIntent(intent: Intent?) {
+        val uri = intent?.data ?: return
+        Log.d(TAG, "Deep link received: $uri")
+        
+        when {
+            uri.host == "clari-deeplink.thnos.app" -> {
+                val projectId = uri.lastPathSegment
+                if (!projectId.isNullOrEmpty()) {
+                    Log.d(TAG, "Web deep link - projectId: $projectId")
+                    lifecycleScope.launch {
+                        _deepLinkFlow.emit(DeepLinkData(projectId = projectId, source = "web"))
+                    }
+                }
+            }
+            uri.scheme == "clari" && uri.host == "project" -> {
+                val shareId = uri.getQueryParameter("shareId")
+                val source = uri.getQueryParameter("source")
+                if (!shareId.isNullOrEmpty()) {
+                    Log.d(TAG, "App deep link - shareId: $shareId, source: $source")
+                    lifecycleScope.launch {
+                        _deepLinkFlow.emit(DeepLinkData(projectId = shareId, source = source))
+                    }
+                }
+            }
+        }
+    }
+    
     private fun initializeFcm() {
         lifecycleScope.launch {
             FcmTokenManager.getToken()
                 .onSuccess { token ->
-                    Log.d(TAG, "========================================")
-                    Log.d(TAG, "MainActivity - FCM 토큰 초기화 성공")
-                    Log.d(TAG, "토큰: $token")
-                    Log.d(TAG, "========================================")
-                    sendTokenToServer(token)
+                    Log.d(TAG, "FCM 토큰 초기화 성공: $token")
                 }
                 .onFailure { e ->
-                    Log.e(TAG, "========================================")
-                    Log.e(TAG, "MainActivity - FCM 토큰 초기화 실패", e)
-                    Log.e(TAG, "========================================")
+                    Log.e(TAG, "FCM 토큰 초기화 실패", e)
                 }
-        }
-    }
-    
-    private fun sendTokenToServer(token: String) {
-        lifecycleScope.launch {
-            try {
-                Log.d(TAG, "서버에 FCM 토큰 전송 시도...")
-                val response = ApiClient.fcmApi.registerToken(
-                    com.iamfiro.clari.core.network.api.RegisterFcmTokenRequest(
-                        token = token
-                    )
-                )
-                if (response.success) {
-                    Log.d(TAG, "========================================")
-                    Log.d(TAG, "서버에 FCM 토큰 전송 성공")
-                    Log.d(TAG, "응답: ${response.message}")
-                    Log.d(TAG, "========================================")
-                } else {
-                    Log.w(TAG, "========================================")
-                    Log.w(TAG, "서버에 FCM 토큰 전송 실패")
-                    Log.w(TAG, "메시지: ${response.message}")
-                    Log.w(TAG, "========================================")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "========================================")
-                Log.e(TAG, "서버에 FCM 토큰 전송 중 오류", e)
-                Log.e(TAG, "========================================")
-            }
         }
     }
 }

@@ -23,7 +23,6 @@ class TokenManager(context: Context) {
         }
     }
     
-    // Session Token (from Room)
     val sessionToken: Flow<String?> = tokenDao.getToken().map { it?.sessionToken }
     
     suspend fun getSessionToken(): String? {
@@ -34,7 +33,6 @@ class TokenManager(context: Context) {
         return runBlocking { getSessionToken() }
     }
     
-    // 기존 코드 호환성을 위한 alias
     val accessToken: Flow<String?> = sessionToken
     
     suspend fun getAccessToken(): String? {
@@ -46,16 +44,17 @@ class TokenManager(context: Context) {
     }
     
     suspend fun saveAccessToken(token: String) {
-        saveSessionToken(token, null, null, null, null)
+        saveSessionToken(token, null, null, null, null, null, false)
     }
     
-    // 세션 토큰과 유저 정보를 함께 저장
     suspend fun saveSessionToken(
         sessionToken: String,
         userId: String?,
         email: String?,
         name: String?,
-        profileUrl: String?
+        profileUrl: String?,
+        role: String? = null,
+        isActive: Boolean = false
     ) {
         val tokenEntity = TokenEntity(
             id = 1,
@@ -63,15 +62,32 @@ class TokenManager(context: Context) {
             userId = userId,
             userEmail = email,
             userName = name,
-            userProfileUrl = profileUrl
+            userProfileUrl = profileUrl,
+            userRole = role,
+            isActive = isActive
         )
         tokenDao.saveToken(tokenEntity)
     }
     
-    // User Info
     suspend fun saveUserInfo(userId: String, email: String, name: String?, profileUrl: String?) {
         val currentToken = getSessionToken() ?: return
-        saveSessionToken(currentToken, userId, email, name, profileUrl)
+        val current = tokenDao.getTokenOnce()
+        saveSessionToken(currentToken, userId, email, name, profileUrl, current?.userRole, current?.isActive ?: false)
+    }
+    
+    suspend fun updateUserActivation(role: String, name: String?, isActive: Boolean) {
+        val current = tokenDao.getTokenOnce() ?: return
+        val tokenEntity = TokenEntity(
+            id = 1,
+            sessionToken = current.sessionToken,
+            userId = current.userId,
+            userEmail = current.userEmail,
+            userName = name ?: current.userName,
+            userProfileUrl = current.userProfileUrl,
+            userRole = role,
+            isActive = isActive
+        )
+        tokenDao.saveToken(tokenEntity)
     }
     
     val userId: Flow<String?> = tokenDao.getToken().map { it?.userId }
@@ -82,11 +98,18 @@ class TokenManager(context: Context) {
     
     val userProfileUrl: Flow<String?> = tokenDao.getToken().map { it?.userProfileUrl }
     
+    val userRole: Flow<String?> = tokenDao.getToken().map { it?.userRole }
+    
+    val isActive: Flow<Boolean> = tokenDao.getToken().map { it?.isActive ?: false }
+    
     suspend fun getUserId(): String? {
         return tokenDao.getTokenOnce()?.userId
     }
     
-    // 로그아웃 시 모든 데이터 삭제
+    suspend fun getIsActive(): Boolean {
+        return tokenDao.getTokenOnce()?.isActive ?: false
+    }
+    
     suspend fun clearAll() {
         tokenDao.deleteToken()
     }
@@ -95,7 +118,6 @@ class TokenManager(context: Context) {
         tokenDao.deleteToken()
     }
     
-    // 로그인 상태 확인
     suspend fun isLoggedIn(): Boolean {
         return getSessionToken() != null
     }

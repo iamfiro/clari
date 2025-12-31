@@ -24,7 +24,7 @@ import com.iamfiro.clari.feature.project.model.Word
 @Composable
 fun ProjectDetailWords(
     words: List<Word>,
-    onWordLongPress: (String) -> Unit,
+    onWordLongPress: ((String) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -63,11 +63,17 @@ fun ProjectDetailWords(
                             word = word,
                             modifier = Modifier
                                 .width(itemWidth)
-                                .pointerInput(word.name) {
-                                    detectTapGestures(
-                                        onLongPress = { onWordLongPress(word.name) }
-                                    )
-                                }
+                                .then(
+                                    if (onWordLongPress != null) {
+                                        Modifier.pointerInput(word.name) {
+                                            detectTapGestures(
+                                                onLongPress = { onWordLongPress(word.name) }
+                                            )
+                                        }
+                                    } else {
+                                        Modifier
+                                    }
+                                )
                         )
                     }
                 }

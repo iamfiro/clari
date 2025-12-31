@@ -127,6 +127,8 @@ class RecordingViewModel(
                     )
                     _transcriptItems.value = currentItems
                 }
+                
+                checkAndAddKeywords(text)
             }
         }
 
@@ -384,16 +386,18 @@ class RecordingViewModel(
                     projectRepository.getKeywordPackById(packId)
                         .onSuccess { pack ->
                             pack.word.forEach { word ->
-                                val normalizedName = word.name.lowercase().trim()
-                                if (!keywordMap.containsKey(normalizedName)) {
-                                    keywordMap[normalizedName] = DetectedTerm(
-                                        id = normalizedName,
-                                        keyword = KeywordHit(
-                                            name = word.name,
-                                            description = word.meaning
-                                        ),
-                                        detectedAt = 0L
-                                    )
+                                val term = DetectedTerm(
+                                    id = word.name.lowercase().trim(),
+                                    keyword = KeywordHit(
+                                        name = word.name,
+                                        description = word.meaning
+                                    ),
+                                    detectedAt = 0L
+                                )
+                                
+                                val searchTargets = buildSearchTargets(word)
+                                searchTargets.forEach { target ->
+                                    keywordMap[target] = term
                                 }
                             }
                         }
@@ -407,29 +411,83 @@ class RecordingViewModel(
         }
     }
     
-    private fun checkAndAddKeywords(text: String) {
-        val normalizedText = text.lowercase().trim()
-        val textWithoutSpaces = normalizedText.replace("\\s+".toRegex(), "")
+    private fun buildSearchTargets(word: com.iamfiro.clari.feature.project.model.Word): List<String> {
+        val targets = mutableListOf<String>()
         
-        _availableKeywords.value.forEach { (keywordKey, term) ->
-            val keywordWithoutSpaces = keywordKey.replace("\\s+".toRegex(), "")
-
-            val exactMatch = normalizedText.contains(keywordKey)
-
-            val spaceIgnoredMatch = textWithoutSpaces.contains(keywordWithoutSpaces)
-
-            val words = keywordKey.split("\\s+".toRegex())
-            val partialMatch = if (words.size > 1) {
-                words.all { word -> normalizedText.contains(word) }
-            } else {
-                false
-            }
-            
-            if (exactMatch || spaceIgnoredMatch || partialMatch) {
-                addTermToDisplay(term)
-                Log.d(TAG, "키워드 매칭: '${term.keyword.name}' (텍스트: '$text', 정확:$exactMatch, 띄어쓰기무시:$spaceIgnoredMatch, 부분:$partialMatch)")
+        val baseName = extractBaseName(word.name)
+        targets.add(normalizeForSearch(baseName))
+        
+        word.koreanPronunciation?.let { pronunciation ->
+            if (pronunciation.isNotBlank()) {
+                targets.add(normalizeForSearch(pronunciation))
             }
         }
+        
+        word.synonyms?.forEach { synonym ->
+            if (synonym.isNotBlank()) {
+                val baseSynonym = extractBaseName(synonym)
+                targets.add(normalizeForSearch(baseSynonym))
+            }
+        }
+        
+        return targets.distinct()
+    }
+    
+    private fun extractBaseName(name: String): String {
+        return name.replace(Regex("\\s*\\([^)]*\\)\\s*"), " ")
+            .replace(Regex("\\s*\\[[^]]*]\\s*"), " ")
+            .trim()
+    }
+    
+    private fun normalizeForSearch(text: String): String {
+        return text.lowercase()
+            .replace(Regex("[\\s\\-_]+"), "")
+            .trim()
+    }
+    
+    private fun checkAndAddKeywords(text: String) {
+        val normalizedText = normalizeForSearch(text)
+        val originalTextLower = text.lowercase()
+        
+        val matchedTermIds = mutableSetOf<String>()
+        
+        _availableKeywords.value.forEach { (searchKey, term) ->
+            if (matchedTermIds.contains(term.id)) return@forEach
+            
+            if (matchKeyword(searchKey, normalizedText, originalTextLower, term.keyword.name)) {
+                matchedTermIds.add(term.id)
+                addTermToDisplay(term)
+                Log.d(TAG, "키워드 매칭: '${term.keyword.name}' (검색키: '$searchKey', 텍스트: '$text')")
+            }
+        }
+    }
+    
+    private fun matchKeyword(searchKey: String, normalizedText: String, originalText: String, originalKeyword: String): Boolean {
+        if (searchKey.length < 2) return false
+        
+        if (normalizedText.contains(searchKey)) {
+            return true
+        }
+        
+        val originalKeywordNormalized = normalizeForSearch(originalKeyword)
+        if (normalizedText.contains(originalKeywordNormalized)) {
+            return true
+        }
+        
+        val originalTextNoSpace = originalText.replace(Regex("\\s+"), "")
+        if (originalTextNoSpace.contains(searchKey)) {
+            return true
+        }
+        
+        if (searchKey.length >= 4) {
+            val keyWithOptionalSpaces = searchKey.toList().joinToString("\\s*")
+            val spacePattern = Regex(keyWithOptionalSpaces, RegexOption.IGNORE_CASE)
+            if (spacePattern.containsMatchIn(originalText)) {
+                return true
+            }
+        }
+        
+        return false
     }
     
     private fun addTermToDisplay(term: DetectedTerm) {

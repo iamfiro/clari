@@ -131,11 +131,16 @@ fun OnboardScreen() {
                     onSuccess = { response ->
                         Log.d(
                             TAG,
-                            "백엔드 인증 성공 - 이메일: ${response.user.email}, 사용자 ID: ${response.user.id}"
+                            "백엔드 인증 성공 - 이메일: ${response.user.email}, 사용자 ID: ${response.user.id}, isActive: ${response.user.isActive}"
                         )
-                        Log.d(TAG, "홈 화면으로 이동")
                         backStack.clear()
-                        backStack.add(Screen.Home)
+                        if (response.user.isActive) {
+                            Log.d(TAG, "홈 화면으로 이동")
+                            backStack.add(Screen.Home)
+                        } else {
+                            Log.d(TAG, "회원가입 완료 화면으로 이동")
+                            backStack.add(Screen.RegisterContinue)
+                        }
                     },
                     onFailure = { error ->
                         Log.e(
@@ -243,7 +248,7 @@ fun OnboardScreen() {
                             onClick = { handleGoogleSignIn() },
                             enabled = !isLoading
                         )
-                        AppleLoginButton(enabled = !isLoading)
+//                        AppleLoginButton(enabled = !isLoading)
                     }
                     Text(
                         "계속 진행하시면 이용약관 및 개인정보처리방침에 동의합니다.",

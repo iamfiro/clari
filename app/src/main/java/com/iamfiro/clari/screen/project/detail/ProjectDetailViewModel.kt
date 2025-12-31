@@ -37,18 +37,17 @@ class ProjectDetailViewModel(
             _uiState.value = _uiState.value.copy(
                 isLoading = true,
                 error = null,
-                project = null // 이전 데이터 초기화
+                project = null
             )
             
             projectRepository.getKeywordPackById(projectId)
                 .onSuccess { pack ->
-                    Log.d(TAG, "프로젝트 로드 완료: id=${pack.id}, name=${pack.name}, words=${pack.word.size}")
+                    Log.d(TAG, "프로젝트 로드 완료: id=${pack.id}, name=${pack.name}, words=${pack.word.size}, isOwned=${pack.isOwned}, isSaved=${pack.isSaved}")
                     _uiState.value = _uiState.value.copy(
                         project = pack,
                         isLoading = false,
                         error = null
                     )
-                    Log.d(TAG, "uiState 업데이트 완료: project.id=${_uiState.value.project?.id}, project.name=${_uiState.value.project?.name}")
                 }
                 .onFailure { e ->
                     Log.e(TAG, "프로젝트 로드 실패: projectId=$projectId", e)
@@ -66,6 +65,7 @@ class ProjectDetailViewModel(
     }
 
     fun addWord(name: String, meaning: String) {
+        if (!_uiState.value.canEdit) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(error = null)
             
@@ -88,6 +88,7 @@ class ProjectDetailViewModel(
     }
 
     fun removeWord(wordName: String) {
+        if (!_uiState.value.canEdit) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(error = null)
             
@@ -109,6 +110,7 @@ class ProjectDetailViewModel(
     }
 
     fun updateProjectName(newName: String) {
+        if (!_uiState.value.canEdit) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(error = null)
             
@@ -137,6 +139,7 @@ class ProjectDetailViewModel(
     }
 
     fun updateBannerImage(uri: Uri) {
+        if (!_uiState.value.canEdit) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(error = null)
             
@@ -165,7 +168,81 @@ class ProjectDetailViewModel(
         }
     }
 
+    fun togglePublic() {
+        if (!_uiState.value.canEdit) return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isTogglingPublic = true, error = null)
+            
+            val currentProject = _uiState.value.project ?: return@launch
+            val newIsPublic = !currentProject.isPublic
+            
+            projectRepository.updateProject(
+                packId = projectId,
+                name = currentProject.name,
+                keywords = currentProject.word,
+                isPublic = newIsPublic,
+                previewImageUrl = currentProject.thumbnail
+            )
+                .onSuccess { pack ->
+                    Log.d(TAG, "공개 설정 변경 완료: isPublic=$newIsPublic")
+                    _uiState.value = _uiState.value.copy(
+                        project = pack,
+                        isTogglingPublic = false,
+                        error = null
+                    )
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "공개 설정 변경 실패", e)
+                    _uiState.value = _uiState.value.copy(
+                        isTogglingPublic = false,
+                        error = "공개 설정 변경에 실패했습니다: ${e.message}"
+                    )
+                }
+        }
+    }
+
+    fun cloudSave() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSaving = true, error = null)
+            
+            projectRepository.cloudSave(projectId)
+                .onSuccess { message ->
+                    Log.d(TAG, "Cloud Save 완료: $message")
+                    loadProject()
+                    _uiState.value = _uiState.value.copy(isSaving = false)
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Cloud Save 실패", e)
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        error = "저장에 실패했습니다: ${e.message}"
+                    )
+                }
+        }
+    }
+
+    fun cloudUnsave(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isUnsaving = true, error = null)
+            
+            projectRepository.cloudUnsave(projectId)
+                .onSuccess { message ->
+                    Log.d(TAG, "Cloud Unsave 완료: $message")
+                    _uiState.value = _uiState.value.copy(isUnsaving = false)
+                    onSuccess()
+                }
+                .onFailure { e ->
+                    Log.e(TAG, "Cloud Unsave 실패", e)
+                    _uiState.value = _uiState.value.copy(
+                        isUnsaving = false,
+                        error = "저장 해제에 실패했습니다: ${e.message}"
+                    )
+                }
+        }
+    }
+
     fun deleteProject(onSuccess: () -> Unit) {
+        if (!_uiState.value.canEdit) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(error = null)
             
@@ -184,6 +261,7 @@ class ProjectDetailViewModel(
     }
 
     fun addConnector(type: ProjectConnectorType, name: String, url: String) {
+        if (!_uiState.value.canEdit) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(error = null, isAddingConnector = true)
 
@@ -215,6 +293,7 @@ class ProjectDetailViewModel(
     }
 
     fun updateConnector(oldConnector: ProjectConnector, newConnector: ProjectConnector) {
+        if (!_uiState.value.canEdit) return
         val currentProject = _uiState.value.project ?: return
         val connectors = currentProject.connector?.toMutableList() ?: return
         val index = connectors.indexOfFirst { 
@@ -229,6 +308,7 @@ class ProjectDetailViewModel(
     }
 
     fun removeConnector(connector: ProjectConnector) {
+        if (!_uiState.value.canEdit) return
         val currentProject = _uiState.value.project ?: return
         val connectors = currentProject.connector?.filter { 
             !(it.type == connector.type && it.url == connector.url)
@@ -239,7 +319,7 @@ class ProjectDetailViewModel(
     }
 
     suspend fun getShareLink(): String {
-        return "https://clari.app/share/pack/$projectId"
+        return "https://clari-deeplink.thnos.app/$projectId"
     }
 
     fun getAiSuggestions(keywordName: String) {
@@ -293,6 +373,7 @@ class ProjectDetailViewModel(
     }
 
     fun addWordsFromAi(words: List<Word>) {
+        if (!_uiState.value.canEdit) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(error = null)
             
@@ -356,6 +437,7 @@ class ProjectDetailViewModel(
     }
 
     fun addAiGeneratedWordsToProject(onComplete: () -> Unit) {
+        if (!_uiState.value.canEdit) return
         viewModelScope.launch {
             val wordsToAdd = _uiState.value.aiGeneratedWords
             if (wordsToAdd.isEmpty()) {

@@ -9,4 +9,10 @@ data class ProjectListUiState(
     val showMenuModal: Boolean = false,
     val showImportSheet: Boolean = false,
     val importUrl: String = ""
-)
+) {
+    val ownedProjects: List<Project>
+        get() = projects.filter { it.isOwned }
+    
+    val savedProjects: List<Project>
+        get() = projects.filter { it.isSaved }
+}

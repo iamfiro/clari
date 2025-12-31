@@ -11,6 +11,7 @@ import com.iamfiro.clari.screen.home.HomeScreen
 import com.iamfiro.clari.screen.note.detail.NoteDetailScreen
 import com.iamfiro.clari.screen.note.list.NoteListScreen
 import com.iamfiro.clari.screen.OnboardScreen
+import com.iamfiro.clari.screen.RegisterContinueScreen
 import com.iamfiro.clari.screen.project.create.ProjectCreateScreen
 import com.iamfiro.clari.screen.project.detail.ProjectDetailScreen
 import com.iamfiro.clari.screen.project.list.ProjectListScreen
@@ -36,6 +37,7 @@ fun AppNav() {
         onBack = { backStack.removeLastOrNull() },
         entryProvider = entryProvider {
             entry<Screen.Onboard> { OnboardScreen() }
+            entry<Screen.RegisterContinue> { RegisterContinueScreen() }
 
             entry<Screen.Home> { HomeScreen() }
 
@@ -46,7 +48,6 @@ fun AppNav() {
             entry<Screen.ProjectCreate> { ProjectCreateScreen() }
             entry<Screen.ProjectDetail> { ProjectDetailScreen(projectId = it.projectId) }
 
-            // Recording
             entry<Screen.BeforeRecording> { RecordingProjectSelectionScreen() }
             entry<Screen.LanguageSelectScreen> { LanguageSelectScreen(it.projectId) }
             entry<Screen.Recording> { 
@@ -58,7 +59,6 @@ fun AppNav() {
                 ) 
             }
 
-            // External Resources
             entry<Screen.ExternalResourceList> { ExternalResourceListScreen() }
             entry<Screen.ExternalResourceDetail> { ExternalResourceDetailScreen(resourceId = it.resourceId) }
         }

@@ -32,8 +32,8 @@ import com.iamfiro.clari.feature.project.model.ProjectConnectorType
 @Composable
 fun ConnectorCard(
     connector: ProjectConnector,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
+    onEdit: (() -> Unit)?,
+    onDelete: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     androidx.compose.foundation.layout.Box(
@@ -41,7 +41,13 @@ fun ConnectorCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .clickable { onEdit() }
+            .then(
+                if (onEdit != null) {
+                    Modifier.clickable { onEdit() }
+                } else {
+                    Modifier
+                }
+            )
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(
@@ -73,19 +79,21 @@ fun ConnectorCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "삭제",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            if (onDelete != null) {
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "삭제",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

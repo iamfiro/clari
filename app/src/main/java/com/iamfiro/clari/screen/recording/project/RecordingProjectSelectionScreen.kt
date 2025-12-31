@@ -22,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -50,6 +51,10 @@ fun RecordingProjectSelectionScreen() {
 
     val uiState by viewModel.uiState.collectAsState()
 
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
     Scaffold(Modifier.fillMaxSize()) { innerPadding ->
         Box(Modifier.fillMaxSize()) {
             PullToRefreshBox(
@@ -75,7 +80,6 @@ fun RecordingProjectSelectionScreen() {
                             Button(
                                 onClick = {
                                     viewModel.startWithoutProject()
-                                    // 프로젝트 없이 시작하기: 빈 projectId로 LanguageSelectScreen으로 이동
                                     backStack.add(Screen.LanguageSelectScreen(projectId = ""))
                                 },
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
@@ -108,6 +112,10 @@ fun RecordingProjectSelectionScreen() {
                                 }
                             }
                         }
+                    }
+                    
+                    item {
+                        Spacer(Modifier.height(100.dp))
                     }
                 }
             }

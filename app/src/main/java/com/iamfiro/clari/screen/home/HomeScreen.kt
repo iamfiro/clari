@@ -13,6 +13,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -41,20 +42,28 @@ fun HomeScreen() {
 
     val uiState by viewModel.uiState.collectAsState()
 
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
     Scaffold(
         bottomBar = { NavBar() },
         floatingActionButton = { NewRecordingFloating() }
     ) { innerPadding ->
-        Column(Modifier.padding(innerPadding)) {
-            Header()
-            PullToRefreshBox(
-                isRefreshing = uiState.isLoading,
-                onRefresh = { viewModel.refresh() },
-                modifier = Modifier.fillMaxSize()
-            ) {
+        PullToRefreshBox(
+            isRefreshing = uiState.isLoading,
+            onRefresh = { viewModel.refresh() },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                Header()
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(28.dp),
-                    modifier = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = 8.dp)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = Dimens.ScreenPadding, vertical = 8.dp)
                 ) {
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

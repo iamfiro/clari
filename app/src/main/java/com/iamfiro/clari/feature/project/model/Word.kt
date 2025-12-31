@@ -3,6 +3,8 @@ package com.iamfiro.clari.feature.project.model
 data class Word(
     val name: String,
     val meaning: String,
+    val koreanPronunciation: String? = null,
+    val synonyms: List<String>? = null
 )
 
 val dummy_words = listOf<Word>(

@@ -1,959 +1,810 @@
-# Clari API Backend Specification
-# Generated: 2025-12-25
-# Base URL: http://localhost:3000 (dev)
+# Clari API - LLM Documentation
+# API 변경사항 및 전체 스펙 (2025-12-30)
 
-## 1. Overview
-- Runtime: Bun
-- Framework: Hono
-- ORM: Prisma
-- Database: PostgreSQL
-- Base URL: http://localhost:3000
-- Auth: JWT Bearer Token
-- WebSocket: Native Bun WebSocket support
+## 📋 목차
+1. [새로 추가된 기능](#새로-추가된-기능)
+2. [User 모델 변경](#user-모델-변경)
+3. [KeywordPack 기능 확장](#keywordpack-기능-확장)
+4. [Note AI 설명 기능](#note-ai-설명-기능)
+5. [STT 전처리 시스템](#stt-전처리-시스템)
+6. [전체 API 엔드포인트](#전체-api-엔드포인트)
 
-## 2. File & Route Structure
-```
-src/
-  index.ts - Main app entry
-  routes/
-    auth.ts - Authentication (Google OAuth)
-    note.ts - Note CRUD operations
-    recording.ts - Recording session management + WebSocket
-    stt.ts - Real-time STT WebSocket
-    keywordpack.ts - Keyword pack management + AI features
-    externalresource.ts - External resource scraping (Firecrawl)
-  middleware/
-    auth.ts - JWT authentication middleware
-  utils/
-    jwt.ts - Token generation/verification
-prisma/
-  schema.prisma - Database schema
-```
+---
 
-## 3. Database Models
+## 🆕 새로 추가된 기능
 
-### User
-```typescript
-{
-  id: string (UUID)
-  email: string (unique)
-  name: string?
-  googleId: string? (unique)
-  profileUrl: string?
-  createdAt: DateTime
-  updatedAt: DateTime
+### 1. 사용자 역할(Role) 및 활성화 시스템
+- Google OAuth 로그인 시 자동 회원가입 (isActive: false)
+- `/auth/register/continue`로 역할 설정 후 활성화
+- 비활성 사용자는 대부분의 API 접근 불가 (403 Forbidden)
+
+### 2. KeywordPack 한글 발음 & 동의어 시스템
+- 영어 단어의 한글 발음 자동 생성
+- 동의어(synonyms) 자동 생성 및 매핑
+- STT 실시간 전처리로 "에이피아이" → "API" 자동 변환
+
+### 3. KeywordPack Cloud Save
+- 공개 KeywordPack 저장 기능
+- 복제 없이 참조만 저장 (savedKeywordPackIds)
+- isOwned/isSaved 플래그로 소유/저장 구분
+
+### 4. Note AI 설명 기능
+- 특정 문장에 대한 맥락 기반 AI 설명
+- 사용자 role에 따른 맞춤형 설명 생성
+- 전체 transcript를 컨텍스트로 활용
+
+---
+
+## 👤 User 모델 변경
+
+### Schema
+```prisma
+model User {
+  id                    String   @id @default(uuid())
+  email                 String   @unique
+  name                  String?
+  googleId              String?  @unique
+  profileUrl            String?
+  role                  String?  // 새로 추가: 사용자 역할 (자유 문자열)
+  isActive              Boolean  @default(false) // 새로 추가: 활성화 여부
+  savedKeywordPackIds   String[] @default([]) // 새로 추가: 저장한 공개 KeywordPack ID 목록
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 ```
 
-### Note
-```typescript
+### 필드 설명
+- **role**: 자유 문자열 (예: "student", "teacher", "admin", "개발자" 등)
+  - AI 설명 생성 시 참고용
+  - student: 초보자 수준 설명
+  - teacher: 교육학적 관점 설명
+  - 기타: 일반적인 설명
+
+- **isActive**: 회원가입 완료 여부
+  - false: 역할 선택 전 (대부분 API 접근 불가)
+  - true: 회원가입 완료 (모든 API 사용 가능)
+
+- **savedKeywordPackIds**: 저장한 공개 KeywordPack ID 배열
+  - 다른 사용자의 공개 팩을 저장할 때 사용
+  - 복제 없이 참조만 저장
+
+---
+
+## 🔐 인증(Auth) API
+
+### 1. Google OAuth 로그인
+```http
+POST /api/auth/google
+Content-Type: application/json
+
 {
-  id: string (UUID)
-  title: string
-  content: string? (Text, contains transcript JSON)
-  aiSummary: string? (Text)
-  speakers: Json? (array of speaker objects)
-  durationInSeconds: number
-  isPublic: boolean
-  recordingUrl: string?
-  recordingStatus: "pending" | "recording" | "completed" | "failed"
-  createdAt: DateTime
-  updatedAt: DateTime
-  lastUpdated: DateTime
-  authorId: string
-  keywordPackIds: string[] (array of IDs)
-  externalResourceIds: string[] (array of IDs)
+  "idToken": "google-id-token"
 }
 ```
 
-### KeywordPack
-```typescript
-{
-  id: string (UUID)
-  name: string
-  keywords: Json (array of {name: string, description: string})
-  createdAt: DateTime
-  updatedAt: DateTime
-  isPublic: boolean
-  previewImageUrl: string?
-  authorId: string
-}
-```
-
-### ExternalResource
-```typescript
-{
-  id: string (UUID)
-  url: string
-  displayUrl: string (URL without query params)
-  title: string (max 10 chars)
-  logoUrl: string?
-  scrapedContent: string? (Text, markdown from Firecrawl)
-  metadata: Json?
-  createdAt: DateTime
-  updatedAt: DateTime
-  authorId: string
-}
-```
-
-## 4. Common Types & Patterns
-
-### Authentication Header
-```
-Authorization: Bearer <JWT_TOKEN>
-```
-
-### Error Response Format
+**Response:**
 ```json
 {
-  "error": "Error message"
-}
-```
-
-### Pagination (Query params)
-```
-?limit=20 (default: 10-50 depending on endpoint)
-?sort=recent_used|recent_created (for notes)
-```
-
-## 5. API Routes
-
-### [routes/auth.ts] - /auth/*
-
-#### POST /auth/google
-- Auth: Public
-- Description: Google OAuth login/signup
-- Request:
-```json
-{
-  "idToken": "google_id_token_from_oauth"
-}
-```
-- Response (200):
-```json
-{
-  "accessToken": "jwt_token",
+  "accessToken": "jwt-token",
   "user": {
     "id": "uuid",
     "email": "user@example.com",
-    "name": "John Doe",
-    "profileUrl": "https://..."
+    "name": "User Name",
+    "profileUrl": "https://...",
+    "role": null,
+    "isActive": false  // ⚠️ 비활성 상태
   }
 }
 ```
-- Errors:
-  - 400: `idToken is required` | `Email not provided by Google`
-  - 401: `Invalid token`
-  - 500: `Authentication failed`
 
----
+**동작:**
+- 첫 로그인: User 생성 (isActive: false)
+- 재로그인: 기존 User 조회
+- JWT 토큰 발급
 
-### [routes/note.ts] - /notes/*
+### 2. 회원가입 완료 (NEW)
+```http
+POST /api/auth/register/continue
+Authorization: Bearer <token>
+Content-Type: application/json
 
-#### GET /notes
-- Auth: Protected (Bearer token)
-- Description: List user's notes
-- Query Params:
-  - `limit` (optional, default: 10): Number of notes
-  - `sort` (optional, default: recent_used): `recent_used` | `recent_created`
-- Response (200):
-```json
 {
-  "notes": [
-    {
-      "id": "uuid",
-      "title": "Meeting Notes",
-      "durationInSeconds": 3600,
-      "createdAt": "2025-12-25T10:00:00Z",
-      "updatedAt": "2025-12-25T11:00:00Z",
-      "lastUpdated": "2025-12-25T11:00:00Z"
-    }
-  ]
+  "role": "student",  // 필수
+  "name": "새 이름"   // 선택
 }
 ```
 
-#### GET /notes/:id
-- Auth: Protected (Bearer token)
-- Description: Get single note details
-- Path Params: `id` (note UUID)
-- Response (200):
+**Response:**
 ```json
 {
-  "note": {
+  "user": {
     "id": "uuid",
-    "title": "Meeting Notes",
-    "content": "{...}", // JSON string with transcript
-    "aiSummary": "Summary text",
-    "speakers": [
-      {"speaker_id": "0", "speaker_name": "참석자 1"}
-    ],
-    "durationInSeconds": 3600,
-    "isPublic": false,
-    "recordingUrl": "https://...",
-    "recordingStatus": "completed",
-    "createdAt": "2025-12-25T10:00:00Z",
-    "updatedAt": "2025-12-25T11:00:00Z",
-    "lastUpdated": "2025-12-25T11:00:00Z",
-    "authorId": "uuid",
-    "keywordPackIds": ["uuid1", "uuid2"],
-    "externalResourceIds": ["uuid1"]
+    "email": "user@example.com",
+    "name": "새 이름",
+    "profileUrl": "https://...",
+    "role": "student",
+    "isActive": true  // ✅ 활성화됨
   }
 }
 ```
-- Errors:
-  - 404: `Note not found`
-  - 403: `Access denied` (not owner and not public)
 
-#### PATCH /notes/:id
-- Auth: Protected (Bearer token)
-- Description: Update note title or speakers
-- Path Params: `id` (note UUID)
-- Request:
-```json
-{
-  "title": "Updated Title (optional)",
-  "speakers": [
-    {"speaker_id": "0", "speaker_name": "Custom Name"}
-  ] // optional
-}
-```
-- Response (200):
-```json
-{
-  "note": { /* full note object */ }
-}
-```
-- Errors:
-  - 404: `Note not found`
-
-#### DELETE /notes/:id
-- Auth: Protected (Bearer token)
-- Description: Delete note
-- Path Params: `id` (note UUID)
-- Response (200):
-```json
-{
-  "message": "Note deleted successfully"
-}
-```
-- Errors:
-  - 404: `Note not found`
+**동작:**
+- role 설정
+- isActive를 true로 변경
+- 이후 모든 API 사용 가능
 
 ---
 
-### [routes/recording.ts] - /notes/session/* + /notes/record/*
+## 📦 KeywordPack 모델 변경
 
-#### POST /notes/session
-- Auth: Protected (Bearer token)
-- Description: Create new recording session
-- Request:
-```json
-{
-  "title": "My Recording (optional)",
-  "languageCode": "ko (optional, default: ko)",
-  "keywordPackIds": ["uuid1", "uuid2"] // optional
-  "externalResourceIds": ["uuid1"] // optional
-}
-```
-- Response (200):
-```json
-{
-  "sessionId": "uuid",
-  "noteId": "uuid",
-  "message": "Session created. Connect to WebSocket to start recording."
+### Schema
+```prisma
+model KeywordPack {
+  id              String   @id @default(uuid())
+  name            String
+  keywords        Json     // 구조 변경됨 (아래 참고)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  isPublic        Boolean  @default(false)
+  previewImageUrl String?
+  authorId        String
 }
 ```
 
-#### POST /notes/session/stop
-- Auth: Protected (Bearer token)
-- Description: Stop recording and transcribe
-- Request:
-```json
+### Keywords 구조 (변경됨)
+```typescript
+// 기존
 {
-  "sessionId": "uuid"
+  name: string
+  description: string
 }
-```
-- Response (200):
-```json
-{
-  "message": "Recording completed and transcribed successfully",
-  "recordingUrl": "https://...",
-  "durationInSeconds": 3600,
-  "transcript": {
-    "text": "Original transcript",
-    "formatted": "GPT-corrected transcript",
-    "language": "ko",
-    "language_probability": 0.99,
-    "word_count": 150
-  },
-  "speakers": [
-    {
-      "speaker_id": "0",
-      "text": "Speaker text...",
-      "word_count": 75
-    }
-  ]
-}
-```
-- Errors:
-  - 400: `sessionId is required`
-  - 404: `Session not found or already stopped`
-  - 403: `Access denied`
 
-#### POST /notes/session/cancel
-- Auth: Protected (Bearer token)
-- Description: Cancel recording and delete note
-- Request:
-```json
+// 변경 후
 {
-  "sessionId": "uuid"
-}
-```
-- Response (200):
-```json
-{
-  "message": "Recording cancelled and deleted successfully",
-  "sessionId": "uuid"
+  name: string                    // 키워드 이름 (예: "API")
+  description: string             // 설명
+  koreanPronunciation?: string    // 새로 추가: 한글 발음 (예: "에이피아이")
+  synonyms?: string[]             // 새로 추가: 동의어 목록 (예: ["Application Programming Interface"])
 }
 ```
 
-#### GET /notes/record/:noteId
-- Auth: Protected (Bearer token)
-- Description: Get recording file URL
-- Path Params: `noteId` (note UUID)
-- Response (200):
+**예시:**
 ```json
 {
-  "recordingUrl": "https://...",
-  "durationInSeconds": 3600
-}
-```
-- Errors:
-  - 404: `Note not found` | `Recording not available`
-  - 403: `Access denied`
-
-#### WebSocket: /notes/session/:sessionId
-- Auth: Bearer token (via query param `?token=` or Authorization header)
-- Description: Real-time audio recording with STT
-- Connection URL: `ws://localhost:3000/notes/session/{sessionId}?token={jwt}`
-
-**Client → Server Messages:**
-```json
-// Audio chunk
-{
-  "audio": "base64_encoded_pcm_audio"
-}
-
-// Control: Toggle keyword detection
-{
-  "action": "keyword.control",
-  "data": "on" | "off"
-}
-
-// Control: Toggle resource hints
-{
-  "action": "hints.control",
-  "data": "on" | "off"
-}
-```
-
-**Server → Client Messages:**
-```json
-// Ready to record
-{
-  "type": "ready",
-  "sessionId": "uuid",
-  "message": "Ready to record"
-}
-
-// Partial transcript (real-time)
-{
-  "type": "partial",
-  "text": "partial transcription text"
-}
-
-// Committed transcript (confirmed)
-{
-  "type": "committed",
-  "text": "confirmed transcription text"
-}
-
-// GPT-formatted text
-{
-  "type": "formatted",
-  "text": "GPT corrected text"
-}
-
-// Detected keywords
-{
-  "type": "keywords",
-  "keywords": [
-    {
-      "name": "Lambda",
-      "description": "AWS serverless function service"
-    }
-  ]
-}
-
-// Resource hints
-{
-  "type": "hints",
-  "hints": [
-    {
-      "resourceId": "uuid",
-      "resourceTitle": "AWS Guide",
-      "hint": "Lambda is a serverless computing service...",
-      "sourceUrl": "https://..."
-    }
-  ]
-}
-
-// Status updates
-{
-  "type": "keyword.status",
-  "enabled": true
-}
-
-{
-  "type": "hints.status",
-  "enabled": true
-}
-
-// Errors
-{
-  "type": "error",
-  "error": "error message"
+  "name": "API",
+  "description": "Application Programming Interface",
+  "koreanPronunciation": "에이피아이",
+  "synonyms": ["Application Programming Interface", "애플리케이션 인터페이스"]
 }
 ```
 
 ---
 
-### [routes/keywordpack.ts] - /keywordpacks/*
+## 📚 KeywordPack API
 
-#### GET /keywordpacks
-- Auth: Protected (Bearer token)
-- Description: List user's keyword packs
-- Query Params: `limit` (optional, default: 50)
-- Response (200):
+### 1. 목록 조회 (변경됨)
+```http
+GET /api/keywordpack?limit=50
+Authorization: Bearer <token>
+```
+
+**Response:**
 ```json
 {
   "packs": [
     {
       "id": "uuid",
-      "name": "AWS Terms",
-      "keywords": [
-        {"name": "EC2", "description": "Virtual server instances"},
-        {"name": "S3", "description": "Object storage service"}
-      ],
-      "createdAt": "2025-12-25T10:00:00Z",
-      "updatedAt": "2025-12-25T11:00:00Z",
+      "name": "내가 만든 팩",
+      "keywords": [...],
       "isPublic": false,
-      "previewImageUrl": "https://..."
-    }
-  ]
-}
-```
-
-#### GET /keywordpacks/:id
-- Auth: Protected (Bearer token)
-- Description: Get single keyword pack
-- Path Params: `id` (pack UUID)
-- Response (200):
-```json
-{
-  "pack": { /* full pack object */ }
-}
-```
-- Errors:
-  - 404: `Keyword pack not found`
-  - 403: `Access denied`
-
-#### POST /keywordpacks
-- Auth: Protected (Bearer token)
-- Description: Create new keyword pack
-- Request:
-```json
-{
-  "name": "My Keywords",
-  "keywords": [
-    {"name": "Term", "description": "Definition"}
-  ], // optional, default: []
-  "isPublic": false // optional
-}
-```
-- Response (200):
-```json
-{
-  "pack": { /* created pack */ }
-}
-```
-- Errors:
-  - 400: `Name is required`
-
-#### POST /keywordpacks/:id/keywords
-- Auth: Protected (Bearer token)
-- Description: Add keyword to pack
-- Path Params: `id` (pack UUID)
-- Request:
-```json
-{
-  "name": "Lambda",
-  "description": "AWS serverless function"
-}
-```
-- Response (200):
-```json
-{
-  "pack": { /* updated pack */ }
-}
-```
-- Errors:
-  - 400: `Keyword name is required`
-  - 404: `Keyword pack not found`
-
-#### PATCH /keywordpacks/:id
-- Auth: Protected (Bearer token)
-- Description: Update keyword pack
-- Path Params: `id` (pack UUID)
-- Request:
-```json
-{
-  "name": "Updated Name (optional)",
-  "keywords": [...], // optional, full replacement
-  "isPublic": true, // optional
-  "previewImageUrl": "https://..." // optional
-}
-```
-- Response (200):
-```json
-{
-  "pack": { /* updated pack */ }
-}
-```
-
-#### DELETE /keywordpacks/:id
-- Auth: Protected (Bearer token)
-- Description: Delete keyword pack
-- Response (200):
-```json
-{
-  "message": "Keyword pack deleted successfully"
-}
-```
-
-#### POST /keywordpacks/ai/autocomplete
-- Auth: Protected (Bearer token)
-- Description: AI suggests 5 descriptions for a keyword
-- Request:
-```json
-{
-  "name": "Lambda"
-}
-```
-- Response (200):
-```json
-{
-  "suggestions": [
-    "AWS의 서버리스 컴퓨팅 서비스입니다.",
-    "이벤트 기반으로 코드를 실행하는 함수형 서비스입니다.",
-    "서버 관리 없이 코드를 실행할 수 있는 서비스입니다.",
-    "자동으로 확장되는 컴퓨팅 리소스를 제공합니다.",
-    "사용한 컴퓨팅 시간만큼만 비용을 지불하는 서비스입니다."
-  ]
-}
-```
-- Errors:
-  - 400: `Keyword name is required`
-  - 500: `Failed to generate suggestions`
-
-#### POST /keywordpacks/ai/autofill
-- Auth: Protected (Bearer token)
-- Description: AI generates keywords from Perplexity search
-- Request:
-```json
-{
-  "query": "AWS 관련 단어 다 찾아줘",
-  "count": 50 // optional, default: 50
-}
-```
-- Response (200):
-```json
-{
-  "keywords": [
-    {"name": "EC2", "description": "가상 서버 인스턴스 서비스"},
-    {"name": "S3", "description": "객체 스토리지 서비스"},
-    // ... up to 'count' keywords
-  ]
-}
-```
-- Errors:
-  - 400: `Query is required`
-  - 500: `Failed to generate keywords`
-
----
-
-### [routes/externalresource.ts] - /externalresources/*
-
-#### GET /externalresources
-- Auth: Protected (Bearer token)
-- Description: List user's external resources
-- Query Params: `limit` (optional, default: 50)
-- Response (200):
-```json
-{
-  "resources": [
+      "authorId": "my-user-id",
+      "isOwned": true,   // 새로 추가: 내가 만든 팩
+      "isSaved": false   // 새로 추가: 저장한 팩 여부
+    },
     {
       "id": "uuid",
-      "url": "https://docs.aws.amazon.com/lambda/",
-      "displayUrl": "https://docs.aws.amazon.com/lambda",
-      "title": "AWS Lambda",
-      "logoUrl": "https://...",
-      "createdAt": "2025-12-25T10:00:00Z",
-      "updatedAt": "2025-12-25T11:00:00Z"
+      "name": "저장한 공개 팩",
+      "keywords": [...],
+      "isPublic": true,
+      "authorId": "other-user-id",
+      "isOwned": false,
+      "isSaved": true    // 다른 사람의 공개 팩을 저장함
     }
   ]
 }
 ```
 
-#### GET /externalresources/:id
-- Auth: Protected (Bearer token)
-- Description: Get single external resource (includes scraped content)
-- Path Params: `id` (resource UUID)
-- Response (200):
+**변경사항:**
+- 내가 만든 팩 + 저장한 공개 팩 모두 반환
+- `isOwned`: 내가 만든 팩인지 여부
+- `isSaved`: 다른 사람의 공개 팩을 저장한 것인지 여부
+
+### 2. AI Autofill (변경됨)
+```http
+POST /api/keywordpack/ai/autofill
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "query": "프로그래밍 기초",
+  "count": 50  // 선택, 기본값 50
+}
+```
+
+**Response:**
 ```json
 {
-  "resource": {
-    "id": "uuid",
-    "url": "https://...",
-    "displayUrl": "https://...",
-    "title": "AWS Guide",
-    "logoUrl": "https://...",
-    "scrapedContent": "Full markdown content from Firecrawl...",
-    "metadata": { /* OG tags, etc */ },
-    "createdAt": "2025-12-25T10:00:00Z",
-    "updatedAt": "2025-12-25T11:00:00Z",
-    "authorId": "uuid"
+  "keywords": [
+    {
+      "name": "API",
+      "description": "애플리케이션 프로그래밍 인터페이스",
+      "koreanPronunciation": "에이피아이",  // 새로 추가
+      "synonyms": ["Application Programming Interface", "애플리케이션 인터페이스"]  // 새로 추가
+    }
+  ],
+  "stats": {
+    "perplexityTime": 1500,
+    "gptTime": 2000,
+    "pronunciationTime": 800,  // 새로 추가
+    "synonymTime": 1200,        // 새로 추가
+    "totalTime": 5500,
+    "requestedCount": 50,
+    "actualCount": 48,
+    "withPronunciation": 35,    // 새로 추가
+    "withSynonyms": 42          // 새로 추가
   }
 }
 ```
-- Errors:
-  - 404: `External resource not found`
-  - 403: `Access denied`
 
-#### POST /externalresources
-- Auth: Protected (Bearer token)
-- Description: Create external resource by scraping URL (Firecrawl + GPT title generation)
-- Request:
-```json
-{
-  "url": "https://docs.aws.amazon.com/lambda/"
-}
+**프로세스 (4단계로 확장):**
+1. Perplexity로 관련 용어 검색
+2. GPT로 키워드 추출 및 한글 설명 생성
+3. GPT로 영어 단어의 한글 발음 생성
+4. GPT로 모든 단어의 동의어 생성
+
+### 3. Cloud Save (NEW)
+```http
+POST /api/keywordpack/:id/cloud-save
+Authorization: Bearer <token>
 ```
-- Response (200):
+
+**Response (성공):**
 ```json
 {
-  "resource": {
+  "message": "Keyword pack saved successfully",
+  "pack": {
     "id": "uuid",
-    "url": "https://docs.aws.amazon.com/lambda/",
-    "displayUrl": "https://docs.aws.amazon.com/lambda",
-    "title": "AWS Lambda", // auto-generated (max 10 chars)
-    "logoUrl": "https://...",
-    "scrapedContent": "Full markdown...",
-    "metadata": {},
-    "createdAt": "2025-12-25T10:00:00Z",
-    "updatedAt": "2025-12-25T11:00:00Z",
-    "authorId": "uuid"
+    "name": "공개 키워드팩",
+    "isOwned": false,
+    "isSaved": true
   }
 }
 ```
-- Errors:
-  - 400: `URL is required`
-  - 500: `Failed to scrape URL`
 
-#### PATCH /externalresources/:id
-- Auth: Protected (Bearer token)
-- Description: Update external resource title (max 10 chars)
-- Path Params: `id` (resource UUID)
-- Request:
+**에러:**
+- 403: Pack이 공개되지 않음
+- 400: 자기 자신의 pack을 저장하려는 경우
+- 200: 이미 저장된 경우
+
+**동작:**
+- 공개(`isPublic: true`)된 KeywordPack만 저장 가능
+- 자기 자신의 팩은 저장 불가
+- User의 `savedKeywordPackIds`에 ID 추가
+- 실제 데이터는 복제하지 않음 (참조만)
+
+### 4. Cloud Unsave (NEW)
+```http
+DELETE /api/keywordpack/:id/cloud-save
+Authorization: Bearer <token>
+```
+
+**Response:**
 ```json
 {
-  "title": "Lambda Doc"
+  "message": "Keyword pack removed from saved list successfully"
 }
 ```
-- Response (200):
-```json
+
+**동작:**
+- User의 `savedKeywordPackIds`에서 ID 제거
+- 원본 데이터는 유지
+
+---
+
+## 📝 Note API
+
+### Note AI 설명 (NEW)
+```http
+POST /api/notes/:id/ai/explanation
+Authorization: Bearer <token>
+Content-Type: application/json
+
 {
-  "resource": { /* updated resource */ }
+  "sentence": "API를 사용해서 React 앱을 만들고 Docker로 배포했습니다"
 }
 ```
-- Errors:
-  - 400: `Title is required` | `Title must be 10 characters or less`
-  - 404: `External resource not found`
 
-#### DELETE /externalresources/:id
-- Auth: Protected (Bearer token)
-- Description: Delete external resource
-- Response (200):
+**Response:**
 ```json
 {
-  "message": "External resource deleted successfully"
+  "sentence": "API를 사용해서 React 앱을 만들고 Docker로 배포했습니다",
+  "explanation": "**맥락**: 이 문장은 웹 애플리케이션 개발의 전체 과정을 설명하는 부분입니다.\n\n**핵심 설명**: \n- API: 프로그램들이 서로 소통할 수 있게 해주는 인터페이스\n- React: 사용자 인터페이스를 만드는 JavaScript 라이브러리\n- Docker: 애플리케이션을 컨테이너로 패키징하여 배포하는 도구\n\n**보충 설명**: 현대적인 웹 개발의 표준 워크플로우입니다.",
+  "context": {
+    "userRole": "student",
+    "noteTitle": "웹 개발 강의",
+    "transcriptLength": 1250
+  },
+  "generatedAt": "2025-12-30T23:35:00.000Z"
 }
+```
+
+**동작:**
+1. Note의 전체 transcript 추출
+2. User의 role 확인
+3. GPT에 전체 맥락 + 사용자 역할 + 특정 문장 전달
+4. 맥락 기반 맞춤형 설명 생성
+
+**역할별 설명 차이:**
+- **student**: 초보자 수준, 비유와 예시 포함
+- **teacher**: 교육학적 관점, 학생 지도 방법 포함
+- **기타**: 일반적인 수준의 설명
+
+**권한:**
+- 본인이 작성한 노트
+- 공개(`isPublic: true`)된 노트
+- 타인의 비공개 노트는 403 Forbidden
+
+---
+
+## 🎙️ STT 전처리 시스템
+
+### 동작 원리
+
+**1. KeywordPack 로드 시:**
+```typescript
+// pronunciation map 생성
+"에이피아이" → "API"
+"리액트" → "React"
+
+// synonym map 생성
+"User Experience" → "UX"
+"Application Programming Interface" → "API"
+"DB" → "데이터베이스"
+```
+
+**2. STT Transcript 수신 시:**
+```typescript
+// 원본: "에이피아이를 사용해서 User Experience를 개선했어요"
+//
+// 전처리 단계 1: 한글 발음 치환
+// → "API를 사용해서 User Experience를 개선했어요"
+//
+// 전처리 단계 2: 동의어 치환
+// → "API를 사용해서 UX를 개선했어요"
+//
+// GPT 교정 (최종)
+// → "API를 사용해서 UX를 개선했어요" (필요시 추가 교정)
+```
+
+**3. 키워드 감지:**
+```typescript
+// 전처리된 텍스트에서 키워드 감지
+// - 키워드 원어 매칭: "API" 검색
+// - 동의어 매칭: "User Experience" 검색 → "UX" 감지
+```
+
+### Recording WebSocket 변경사항
+
+**RecordingSession 구조:**
+```typescript
+interface RecordingSession {
+  sessionId: string
+  noteId: string
+  userId: string
+  audioChunks: Buffer[]
+  startTime: number
+  sttConnection: any
+  transcriptText: string
+  languageCode: string
+  keywordPack?: {
+    name: string
+    description: string
+    koreanPronunciation?: string  // 새로 추가
+    synonyms?: string[]           // 새로 추가
+  }[]
+  keywordDetectionEnabled: boolean
+  externalResources?: Array<{...}>
+  resourceHintsEnabled: boolean
+  pronunciationMap: Map<string, string>  // 새로 추가: 한글발음 → 원어
+  synonymMap: Map<string, string>        // 새로 추가: 동의어 → 원어
+}
+```
+
+**이벤트 플로우:**
+```
+1. STT에서 COMMITTED_TRANSCRIPT 수신
+   ↓
+2. preprocessTextWithVocabulary() 호출
+   - pronunciationMap 적용 ("에이피아이" → "API")
+   - synonymMap 적용 ("User Experience" → "UX")
+   ↓
+3. 전처리된 텍스트로 키워드 감지
+   ↓
+4. GPT 교정 (normalizeTextWithGpt)
+   ↓
+5. 클라이언트에 전송
 ```
 
 ---
 
-### [routes/stt.ts] - /ws/stt/*
+## 🔄 전체 API 엔드포인트 목록
 
-#### WebSocket: /ws/stt
-- Auth: None (standalone STT without recording)
-- Description: Real-time speech-to-text only
-- Connection URL: `ws://localhost:3000/ws/stt`
-
-**Client → Server:**
-```json
-{
-  "audio": "base64_encoded_pcm_16000hz"
-}
+### 인증 (Auth)
+```
+POST   /api/auth/google                  # Google OAuth 로그인
+POST   /api/auth/register/continue       # 회원가입 완료 (NEW)
 ```
 
-**Server → Client:**
-```json
-// Partial transcript
-{
-  "type": "partial",
-  "text": "real-time text",
-  "chunks": ["line1", "line2"] // for Android display
-}
-
-// Committed transcript
-{
-  "type": "committed",
-  "text": "confirmed text",
-  "chunks": ["line1", "line2"]
-}
-
-// GPT formatted
-{
-  "type": "formatted",
-  "text": "corrected text",
-  "chunks": ["line1", "line2"]
-}
+### 노트 (Note)
+```
+GET    /api/notes                        # 노트 목록
+GET    /api/notes/:id                    # 노트 상세
+PATCH  /api/notes/:id                    # 노트 수정
+DELETE /api/notes/:id                    # 노트 삭제
+POST   /api/notes/:id/ai/explanation     # AI 설명 생성 (NEW)
 ```
 
----
-
-### [Main App] - /*
-
-#### GET /
-- Auth: Public
-- Response (200):
-```json
-{
-  "message": "Clari API Server"
-}
+### KeywordPack
+```
+GET    /api/keywordpack                  # 목록 조회 (변경됨: isOwned/isSaved 추가)
+GET    /api/keywordpack/:id              # 상세 조회
+POST   /api/keywordpack                  # 생성
+PATCH  /api/keywordpack/:id              # 수정
+DELETE /api/keywordpack/:id              # 삭제
+POST   /api/keywordpack/:id/keywords     # 키워드 추가
+POST   /api/keywordpack/ai/autocomplete  # AI 자동완성
+POST   /api/keywordpack/ai/autofill      # AI Autofill (변경됨: 발음/동의어 추가)
+POST   /api/keywordpack/:id/cloud-save   # 공개 팩 저장 (NEW)
+DELETE /api/keywordpack/:id/cloud-save   # 저장 해제 (NEW)
 ```
 
-#### GET /me
-- Auth: Protected (Bearer token)
-- Description: Get current user info
-- Response (200):
-```json
-{
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "name": "John Doe",
-    "profileUrl": "https://..."
-  }
-}
+### 녹음 (Recording)
 ```
-- Errors:
-  - 404: `User not found`
-
----
-
-## 6. Business Flows
-
-### Authentication Flow
-```
-1. User initiates Google OAuth (frontend)
-2. Frontend gets idToken from Google
-3. POST /auth/google with idToken
-4. Backend verifies token, creates/updates user
-5. Backend returns JWT accessToken
-6. Client stores accessToken
-7. Use accessToken in Authorization header for all protected routes
+POST   /api/recording/session            # 녹음 세션 생성
+WS     /api/recording/session/:id        # WebSocket 연결 (변경됨: 전처리 추가)
+POST   /api/recording/session/stop       # 녹음 중지
+POST   /api/recording/session/cancel     # 녹음 취소
+GET    /api/recording/record/:noteId     # 녹음 파일 조회
 ```
 
-### Recording Session Flow
+### STT (실시간 음성 인식)
 ```
-1. Create session: POST /notes/session
-   → Returns sessionId
-   
-2. Connect WebSocket: ws://.../notes/session/:sessionId?token=jwt
-   → Receive "ready" message
-   
-3. Send audio chunks: {"audio": "base64..."}
-   → Receive real-time transcripts (partial, committed, formatted)
-   → Receive keyword detections (if keywordPackIds provided)
-   → Receive resource hints (if externalResourceIds provided)
-   
-4. Toggle features during recording:
-   - {"action": "keyword.control", "data": "off"}
-   - {"action": "hints.control", "data": "on"}
-   
-5. Stop recording: POST /notes/session/stop
-   → Returns full transcript, speakers, recording URL
-   
-6. Or cancel: POST /notes/session/cancel
-   → Deletes note immediately
+WS     /api/stt                          # WebSocket STT (변경됨: 프롬프트 개선)
 ```
 
-### Note Management Flow
+### ExternalResource
 ```
-1. List notes: GET /notes?limit=20&sort=recent_used
-2. View details: GET /notes/:id
-3. Update: PATCH /notes/:id (title, speakers)
-4. Delete: DELETE /notes/:id
-```
-
-### Keyword Pack Flow
-```
-1. Create pack: POST /keywordpacks {"name": "AWS Terms"}
-2. Add keywords manually: POST /keywordpacks/:id/keywords
-3. OR use AI autocomplete:
-   - POST /keywordpacks/ai/autocomplete {"name": "Lambda"}
-   - Select from 5 suggestions
-   - Add to pack
-4. OR use AI autofill:
-   - POST /keywordpacks/ai/autofill {"query": "AWS terms", "count": 50}
-   - Get 50 keywords at once
-   - PATCH /keywordpacks/:id with full keywords array
-5. Use in recording: POST /notes/session {"keywordPackIds": ["uuid1", "uuid2"]}
-```
-
-### External Resource Flow
-```
-1. Scrape website: POST /externalresources {"url": "https://..."}
-   → Firecrawl scrapes content
-   → GPT generates 10-char title
-   → Returns resource with scraped content
-2. List resources: GET /externalresources
-3. Update title: PATCH /externalresources/:id {"title": "New Title"}
-4. Use in recording: POST /notes/session {"externalResourceIds": ["uuid1"]}
-   → During recording, hints appear when related words detected
-5. Delete: DELETE /externalresources/:id
+GET    /api/externalresource             # 목록 조회
+GET    /api/externalresource/:id         # 상세 조회
+POST   /api/externalresource             # 생성
+PATCH  /api/externalresource/:id         # 수정
+DELETE /api/externalresource/:id         # 삭제
 ```
 
 ---
 
-## 7. WebSocket Audio Format
+## 🔒 인증 미들웨어 변경사항
 
-### For Recording & STT WebSockets
-- Format: PCM (Raw audio)
-- Sample Rate: 16000 Hz
-- Encoding: Signed 16-bit
-- Channels: Mono (1)
-- Transmission: Base64-encoded JSON
+### authMiddleware (변경됨)
+```typescript
+// 기존: JWT 토큰만 검증
+// 변경: JWT 토큰 + isActive 체크
 
-**Client Audio Capture:**
+// 예외 경로: /api/auth/register/continue
+// - 회원가입 완료 전이므로 isActive=false여도 접근 가능
+
+// 그 외 모든 경로:
+// - isActive=false → 403 Forbidden
+// - 에러 메시지: "Account not activated. Please complete registration."
 ```
-Record audio → Convert to PCM 16kHz mono → Base64 encode → Send as JSON
+
+---
+
+## 📊 데이터 플로우 예시
+
+### 1. 신규 사용자 가입 플로우
+```
+1. Google OAuth 로그인
+   → POST /api/auth/google
+   → User 생성 (isActive: false)
+   ↓
+2. 클라이언트에서 isActive 확인
+   → false이면 회원가입 완료 페이지로 이동
+   ↓
+3. 역할 선택 및 정보 입력
+   → POST /api/auth/register/continue
+   → isActive: true로 변경
+   ↓
+4. 모든 API 사용 가능
 ```
 
-**Example (pseudo-code):**
+### 2. KeywordPack 공유 플로우
+```
+1. 사용자 A: KeywordPack 생성 (isPublic: false)
+   ↓
+2. 사용자 A: isPublic을 true로 변경
+   ↓
+3. 사용자 B: 공개 팩 발견
+   → POST /api/keywordpack/{id}/cloud-save
+   → User B의 savedKeywordPackIds에 추가
+   ↓
+4. 사용자 B: GET /api/keywordpack
+   → 자신의 팩 + 저장한 공개 팩 모두 조회
+   → isOwned: false, isSaved: true로 표시
+   ↓
+5. 사용자 A: 팩 업데이트
+   → 사용자 B도 자동으로 최신 버전 사용
+```
+
+### 3. 녹음 및 전처리 플로우
+```
+1. 녹음 세션 생성
+   → KeywordPack 선택 (발음/동의어 포함)
+   ↓
+2. WebSocket 연결
+   → pronunciationMap, synonymMap 생성
+   ↓
+3. STT 음성 인식
+   → "에이피아이를 사용합니다"
+   ↓
+4. 실시간 전처리
+   → "API를 사용합니다"
+   ↓
+5. 키워드 감지
+   → "API" 키워드 감지됨
+   ↓
+6. GPT 교정
+   → "API를 사용합니다" (필요시 추가 교정)
+   ↓
+7. 클라이언트 전송
+   → type: "formatted", text: "API를 사용합니다"
+```
+
+### 4. AI 설명 요청 플로우
+```
+1. 사용자가 transcript에서 문장 선택
+   → "API를 통해 데이터를 가져옵니다"
+   ↓
+2. POST /api/notes/:id/ai/explanation
+   ↓
+3. 서버:
+   - Note의 전체 transcript 추출
+   - User의 role 확인 ("student")
+   - GPT에 컨텍스트 전달
+   ↓
+4. GPT 응답:
+   - 맥락: "데이터 통신 방법 설명 부분"
+   - 핵심: "API는 식당의 웨이터와 같습니다..."
+   - 보충: "HTTP 요청으로 데이터를 주고받습니다"
+   ↓
+5. 클라이언트에 구조화된 설명 반환
+```
+
+---
+
+## 🎯 Kotlin 개발자를 위한 주요 포인트
+
+### 1. 인증 플로우 변경
 ```kotlin
-// Android MediaRecorder setup
-val audioFormat = AudioFormat.Builder()
-    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-    .setSampleRate(16000)
-    .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
-    .build()
+// 기존
+val response = api.googleLogin(idToken)
+// 바로 모든 API 사용 가능
 
-// Send chunks
-val base64Audio = Base64.encodeToString(audioBytes, Base64.NO_WRAP)
-websocket.send("""{"audio":"$base64Audio"}""")
+// 변경 후
+val response = api.googleLogin(idToken)
+if (!response.user.isActive) {
+    // 회원가입 완료 화면으로 이동
+    navigateToRegisterContinue()
+} else {
+    // 메인 화면으로 이동
+    navigateToMain()
+}
+
+// 회원가입 완료
+api.registerContinue(role = "student", name = "홍길동")
+```
+
+### 2. KeywordPack 데이터 모델
+```kotlin
+data class Keyword(
+    val name: String,
+    val description: String,
+    val koreanPronunciation: String? = null,  // 새로 추가
+    val synonyms: List<String>? = null        // 새로 추가
+)
+
+data class KeywordPack(
+    val id: String,
+    val name: String,
+    val keywords: List<Keyword>,
+    val isPublic: Boolean,
+    val authorId: String,
+    val isOwned: Boolean,   // 새로 추가
+    val isSaved: Boolean    // 새로 추가
+)
+```
+
+### 3. UI 구분 로직
+```kotlin
+fun renderKeywordPackList(packs: List<KeywordPack>) {
+    // 내가 만든 팩
+    val ownedPacks = packs.filter { it.isOwned }
+
+    // 저장한 공개 팩
+    val savedPacks = packs.filter { it.isSaved }
+
+    // UI 렌더링
+    ownedPacks.forEach { pack ->
+        // 수정/삭제 버튼 표시
+        // 공개/비공개 토글 표시
+    }
+
+    savedPacks.forEach { pack ->
+        // 읽기 전용
+        // 저장 해제 버튼만 표시
+    }
+}
+```
+
+### 4. 에러 처리
+```kotlin
+try {
+    val response = api.getKeywordPacks()
+} catch (e: HttpException) {
+    when (e.code()) {
+        403 -> {
+            if (e.message().contains("not activated")) {
+                // 회원가입 완료 필요
+                showActivationDialog()
+            } else {
+                // 권한 없음
+                showError("접근 권한이 없습니다")
+            }
+        }
+        // ... 기타 에러 처리
+    }
+}
+```
+
+### 5. WebSocket 메시지 타입
+```kotlin
+sealed class STTMessage {
+    data class Partial(val text: String) : STTMessage()
+    data class Committed(val text: String) : STTMessage()
+    data class Formatted(val text: String) : STTMessage()  // 전처리 + GPT 교정
+    data class Keywords(val keywords: List<Keyword>) : STTMessage()
+    data class Hints(val hints: List<Hint>) : STTMessage()
+    data class Error(val error: String) : STTMessage()
+}
+
+// 처리
+when (val message = parseSTTMessage(json)) {
+    is STTMessage.Partial -> updatePartialText(message.text)
+    is STTMessage.Committed -> updateCommittedText(message.text)
+    is STTMessage.Formatted -> {
+        // 최종 교정된 텍스트 (한글발음→원어, 동의어→원어, GPT 교정 완료)
+        updateFormattedText(message.text)
+    }
+    is STTMessage.Keywords -> showKeywordHints(message.keywords)
+    // ...
+}
 ```
 
 ---
 
-## 8. Error Codes Summary
+## 📝 변경사항 요약 (Kotlin 개발자용 체크리스트)
 
-| Code | Meaning | Example |
-|------|---------|---------|
-| 400 | Bad Request | Missing required field, invalid format |
-| 401 | Unauthorized | Invalid/expired JWT token |
-| 403 | Forbidden | Accessing other user's resource |
-| 404 | Not Found | Resource doesn't exist |
-| 500 | Server Error | Database error, external API failure |
+### ✅ User 모델
+- [ ] `role: String?` 필드 추가 (DTO 업데이트)
+- [ ] `isActive: Boolean` 필드 추가 (DTO 업데이트)
+- [ ] `savedKeywordPackIds: List<String>` 필드 추가 (DTO 업데이트)
+
+### ✅ 인증 플로우
+- [ ] 로그인 후 `isActive` 체크 로직 추가
+- [ ] 회원가입 완료 화면 구현
+- [ ] `POST /api/auth/register/continue` API 연동
+- [ ] 403 에러 시 "Account not activated" 메시지 처리
+
+### ✅ KeywordPack
+- [ ] `Keyword` 모델에 `koreanPronunciation` 추가
+- [ ] `Keyword` 모델에 `synonyms` 추가
+- [ ] `KeywordPack` 모델에 `isOwned` 추가
+- [ ] `KeywordPack` 모델에 `isSaved` 추가
+- [ ] Cloud Save API 연동 (`POST /cloud-save`)
+- [ ] Cloud Unsave API 연동 (`DELETE /cloud-save`)
+- [ ] UI에서 소유/저장 팩 구분 표시
+
+### ✅ Note
+- [ ] AI 설명 API 연동 (`POST /:id/ai/explanation`)
+- [ ] 설명 표시 UI 구현
+- [ ] Markdown 형식 렌더링 (맥락/핵심/보충)
+
+### ✅ STT/Recording
+- [ ] `formatted` 메시지 타입 처리 (전처리 완료된 텍스트)
+- [ ] 키워드 감지 시 동의어 매칭 고려
+- [ ] UI에 전처리 효과 표시 (선택사항)
 
 ---
 
-## 9. Environment Variables Required
+## 🔍 테스트 시나리오
 
-```bash
-# Database
-DATABASE_URL="postgresql://..."
+### 1. 신규 가입 테스트
+```
+1. Google 로그인 → isActive: false 확인
+2. 다른 API 호출 → 403 에러 확인
+3. /auth/register/continue 호출 → isActive: true 확인
+4. 다른 API 정상 호출 확인
+```
 
-# Auth
-GOOGLE_CLIENT_ID="..."
-JWT_SECRET="..."
+### 2. KeywordPack 공유 테스트
+```
+1. 사용자 A: KeywordPack 생성 (isPublic: true)
+2. 사용자 B: cloud-save 호출
+3. 사용자 B: GET /keywordpack → isSaved: true 확인
+4. 사용자 A: 팩 수정
+5. 사용자 B: GET /keywordpack/:id → 최신 버전 확인
+6. 사용자 B: cloud-unsave 호출
+7. 사용자 B: GET /keywordpack → 목록에서 제거 확인
+```
 
-# AI Services
-AZURE_ENDPOINT="https://..."
-AZURE_API_KEY="..."
-AZURE_API_VERSION="2024-12-01-preview"
-AZURE_DEPLOYMENT_NAME="gpt-4.1-mini"
-PERPLEXITY_API_KEY="..."
-FIRECRAWL_API_KEY="..."
+### 3. STT 전처리 테스트
+```
+1. 발음/동의어가 포함된 KeywordPack 선택
+2. 녹음 시작
+3. "에이피아이" 발음 → "API"로 변환 확인
+4. "User Experience" 발음 → "UX"로 변환 확인
+5. 키워드 감지 동작 확인
+```
 
-# Speech Services
-ELEVENLABS_API_KEY="..."
-
-# Storage (Cloudflare R2)
-R2_ACCOUNT_ID="..."
-R2_ACCESS_KEY_ID="..."
-R2_SECRET_ACCESS_KEY="..."
-R2_BUCKET_NAME="..."
+### 4. AI 설명 테스트
+```
+1. 녹음 완료된 Note 선택
+2. transcript에서 문장 선택
+3. AI 설명 요청
+4. role에 따른 설명 차이 확인
 ```
 
 ---
 
-## 10. Notes for Android Integration
+## 📚 참고 자료
 
-### Retrofit Setup
-- Base URL: `http://10.0.2.2:3000` (Android emulator) or actual server URL
-- Add Authorization interceptor for Bearer token
-- Use OkHttp for WebSocket connections
-
-### WebSocket Libraries
-- Use OkHttp WebSocket for recording sessions
-- Handle JSON serialization with Gson/Moshi
-- Manage connection state (ready, recording, closed)
-
-### Audio Recording
-- Use MediaRecorder or AudioRecord
-- PCM format: 16000 Hz, 16-bit, mono
-- Chunk size: 1024-4096 bytes recommended
-- Base64 encode before sending
-
-### State Management
-- Store JWT token securely (EncryptedSharedPreferences)
-- Handle session lifecycle (create → connect → record → stop)
-- Display real-time transcripts using LiveData/Flow
-- Show keyword/hint cards as they arrive
-
-### Recommended Architecture
+### API Base URL
 ```
-UI Layer (Compose/Views)
-  ↓
-ViewModel (State management)
-  ↓
-Repository (API + WebSocket)
-  ↓
-Data Layer (Retrofit + OkHttp)
+개발: http://localhost:3000/api
+프로덕션: https://api.clari.example.com/api
+```
+
+### 인증 헤더
+```
+Authorization: Bearer <jwt-token>
+```
+
+### WebSocket 인증
+```
+방법 1: Header - Authorization: Bearer <token>
+방법 2: Query - ?token=<token>
+```
+
+### 에러 코드
+```
+400 Bad Request - 잘못된 요청
+401 Unauthorized - 인증 실패
+403 Forbidden - 권한 없음 (isActive=false 포함)
+404 Not Found - 리소스 없음
+500 Internal Server Error - 서버 오류
 ```
 
 ---
 
-END OF SPECIFICATION
+이 문서는 2025-12-30 기준으로 작성되었습니다.
+질문이나 추가 정보가 필요한 경우 백엔드 팀에 문의하세요.

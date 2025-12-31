@@ -30,4 +30,7 @@ data class Project(
     val connector: List<ProjectConnector>? = null,
     
     val isPublic: Boolean = false,
+    
+    val isOwned: Boolean = true,
+    val isSaved: Boolean = false
 )

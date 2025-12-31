@@ -13,6 +13,8 @@ import com.iamfiro.clari.feature.note.model.TranscriptLine
 import com.iamfiro.clari.feature.note.model.TranscriptWord
 import kotlinx.serialization.json.Json
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 private const val TAG = "NoteMapper"
@@ -21,6 +23,7 @@ object NoteMapper {
     
     private val json = Json { ignoreUnknownKeys = true }
     private val isoFormatter = DateTimeFormatter.ISO_DATE_TIME
+    private val koreaZone = ZoneId.of("Asia/Seoul")
     private val displayFormatter = DateTimeFormatter.ofPattern("yyyy년 M월 d일 HH:mm")
 
     fun fromListItemDto(dto: NoteListItemDto): Note {
@@ -28,7 +31,7 @@ object NoteMapper {
         
         return Note(
             id = dto.id,
-            type = NoteType.READY, // 리스트에서는 기본적으로 READY
+            type = NoteType.READY,
             name = dto.title,
             duration = dto.durationInSeconds.toLong() * 1000,
             createdAt = createdAt,
@@ -82,13 +85,15 @@ object NoteMapper {
     
     private fun parseDateTime(isoString: String): LocalDateTime {
         return try {
-            LocalDateTime.parse(isoString, isoFormatter)
+            val zonedDateTime = ZonedDateTime.parse(isoString, isoFormatter)
+            zonedDateTime.withZoneSameInstant(koreaZone).toLocalDateTime()
         } catch (e: Exception) {
             try {
                 val cleaned = isoString.replace("Z", "").replace(Regex("\\.\\d+"), "")
-                LocalDateTime.parse(cleaned)
+                val utcDateTime = LocalDateTime.parse(cleaned)
+                utcDateTime.atZone(ZoneId.of("UTC")).withZoneSameInstant(koreaZone).toLocalDateTime()
             } catch (e2: Exception) {
-                LocalDateTime.now()
+                LocalDateTime.now(koreaZone)
             }
         }
     }

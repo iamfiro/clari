@@ -187,7 +187,7 @@ private fun TranscribeTextItem(
                         Text(
                             text = chunk,
                             fontSize = chunkFontSize,
-                            fontWeight = if (isFormatted) FontWeight.SemiBold else FontWeight.Medium,
+                            fontWeight = if (isFormatted) FontWeight.Medium else FontWeight.Normal,
                             lineHeight = chunkLineHeight,
                             color = color
                         )

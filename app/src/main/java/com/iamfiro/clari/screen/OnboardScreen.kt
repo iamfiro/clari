@@ -249,28 +249,28 @@ fun OnboardScreen() {
                             enabled = !isLoading
                         )
 //                        AppleLoginButton(enabled = !isLoading)
+
+                        Text(
+                            "계속 진행하시면 이용약관 및 개인정보처리방침에 동의합니다.",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.secondary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
-                    Text(
-                        "계속 진행하시면 이용약관 및 개인정보처리방침에 동의합니다.",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.secondary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
             }
-        }
 
-        // 로딩 인디케이터
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
             }
         }
     }

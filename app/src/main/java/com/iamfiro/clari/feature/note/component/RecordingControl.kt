@@ -40,7 +40,8 @@ fun RecordingControl(
     elapsedTime: String = "00:00",
     connectionState: ConnectionState = ConnectionState.Disconnected,
     isLoading: Boolean = false,
-    onToggleRecording: () -> Unit = {}
+    onToggleRecording: () -> Unit = {},
+    onPauseToggle: () -> Unit = {}
 ) {
     Log.d(TAG, "RecordingControl 렌더링 - isRecording: $isRecording, isPaused: $isPaused, connectionState: $connectionState, isLoading: $isLoading")
     
@@ -68,28 +69,28 @@ fun RecordingControl(
             ConnectionStatusIndicator(connectionState, isLoading)
         }
 
-        // 녹음 버튼
+        // 일시정지/재개 버튼
         Box(
             modifier = Modifier
                 .height(65.dp)
                 .width(65.dp)
                 .clip(RoundedCornerShape(999.dp))
                 .background(
-                    if (isRecording) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                    if (isRecording && !isPaused) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
                     else Color.Transparent
                 )
                 .border(
                     width = 2.dp,
-                    color = if (isRecording) {
+                    color = if (isRecording && !isPaused) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.outline
                     },
                     shape = RoundedCornerShape(999.dp)
                 )
-                .clickable(enabled = !isLoading) {
-                    Log.d(TAG, "========== 버튼 클릭됨! ==========")
-                    onToggleRecording()
+                .clickable(enabled = !isLoading && (isRecording || isPaused)) {
+                    Log.d(TAG, "========== 일시정지/재개 버튼 클릭됨! ==========")
+                    onPauseToggle()
                 },
             contentAlignment = Alignment.Center
         ) {
@@ -103,10 +104,10 @@ fun RecordingControl(
                 else -> {
                     Icon(
                         painter = painterResource(
-                            if (isRecording) R.drawable.stop else R.drawable.mic
+                            if (isPaused) R.drawable.mic else R.drawable.pause
                         ),
-                        contentDescription = if (isRecording) "녹음 중지" else "녹음 시작",
-                        tint = if (isRecording) {
+                        contentDescription = if (isPaused) "녹음 재개" else "일시정지",
+                        tint = if (isRecording && !isPaused) {
                             MaterialTheme.colorScheme.error
                         } else if (isSystemInDarkTheme()) {
                             Color(0xFFFFFFFF)

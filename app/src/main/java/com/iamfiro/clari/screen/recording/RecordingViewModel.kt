@@ -147,8 +147,15 @@ class RecordingViewModel(
             audioRecorderService.recordingState.collect { state ->
                 Log.d(TAG, "녹음 상태 변경: $state")
                 when (state) {
-                    is RecordingState.Recording -> _isRecording.value = true
-                    is RecordingState.Stopped -> _isRecording.value = false
+                    is RecordingState.Recording -> {
+                        _isRecording.value = true
+                    }
+                    is RecordingState.Stopped -> {
+                        // 일시정지 상태가 아닐 때만 isRecording을 false로
+                        if (!_isPaused.value) {
+                            _isRecording.value = false
+                        }
+                    }
                     else -> {}
                 }
             }

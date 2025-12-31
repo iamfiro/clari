@@ -222,32 +222,12 @@ fun RecordingScreen(
                         else -> com.iamfiro.clari.core.service.ConnectionState.Disconnected
                     },
                     isLoading = isCreatingSession || isSaving,
-                    onToggleRecording = {
-                        Log.d(TAG, "녹음 버튼 클릭")
-                        if (!hasPermission) {
-                            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        } else if (isRecording) {
-                            isSaving = true
-                            viewModel.stopRecording { noteId ->
-                                isSaving = false
-                                if (noteId != null) {
-                                    Log.d(TAG, "녹음 저장 완료, NoteDetail로 이동: $noteId")
-                                    // 녹음 관련 화면들을 모두 제거하고 Home만 남긴 후 NoteDetail로 이동
-                                    // backstack: Home -> BeforeRecording -> LanguageSelect -> Recording
-                                    // 목표: Home -> NoteDetail
-                                    while (backStack.size > 1) {
-                                        backStack.removeLastOrNull()
-                                    }
-                                    backStack.add(Screen.NoteDetail(noteId))
-                                } else {
-                                    Log.e(TAG, "녹음 저장 실패")
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar("녹음 저장에 실패했습니다")
-                                    }
-                                }
-                            }
+                    onPauseToggle = {
+                        Log.d(TAG, "일시정지/재개 버튼 클릭")
+                        if (isPaused) {
+                            viewModel.resumeRecording()
                         } else {
-                            viewModel.toggleRecording()
+                            viewModel.pauseRecording()
                         }
                     }
                 )

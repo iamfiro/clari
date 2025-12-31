@@ -149,7 +149,7 @@ fun NoteDetailContent(
                     )
                 }
 
-                item { Spacer(Modifier.height(210.dp)) }
+                item { Spacer(Modifier.height(300.dp)) }
             }
         }
     }

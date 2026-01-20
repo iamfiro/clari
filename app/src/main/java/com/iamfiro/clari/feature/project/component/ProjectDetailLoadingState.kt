@@ -15,6 +15,6 @@ fun ProjectDetailLoadingState(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text("로딩 중...")
+        Text("Loading...")
     }
 }

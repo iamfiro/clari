@@ -68,7 +68,7 @@ fun RecordingProjectSelectionScreen() {
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    item { HeaderWithBackButton("녹음을 시작하기 전에\n프로젝트를 선택해주세요") }
+                    item { HeaderWithBackButton("Before starting the recording,\nselect a project") }
 
                     item { Spacer(Modifier.height(2.dp)) }
 
@@ -94,7 +94,7 @@ fun RecordingProjectSelectionScreen() {
                                         modifier = Modifier.size(18.dp)
                                     )
 
-                                    Text("프로젝트 없이 시작하기", fontWeight = FontWeight.SemiBold)
+                                    Text("Start without project", fontWeight = FontWeight.SemiBold)
                                 }
                             }
 
@@ -148,7 +148,7 @@ fun RecordingProjectSelectionScreen() {
                         .height(60.dp)
                 ) {
                     Text(
-                        if (uiState.selectedProject != null) "다음" else "프로젝트를 선택해주세요",
+                        if (uiState.selectedProject != null) "Next" else "Please select a project",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold
                     )

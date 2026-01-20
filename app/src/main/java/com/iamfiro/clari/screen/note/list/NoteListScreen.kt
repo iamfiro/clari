@@ -65,7 +65,7 @@ fun NoteListScreen() {
                 .padding(innerPadding)
         ) {
             Column(Modifier.fillMaxSize()) {
-                Header("노트")
+                Header("Notes")
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier

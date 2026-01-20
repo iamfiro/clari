@@ -32,6 +32,6 @@ fun NoteCardBlack() {
             .padding(20.dp)
     ) {
         Icon(painter = painterResource(R.drawable.file_audio), "no_card", Modifier.alpha(0.5f))
-        Text("등록된 노트가 없습니다", color = MaterialTheme.colorScheme.primary)
+        Text("No notes registered", color = MaterialTheme.colorScheme.primary)
     }
 }

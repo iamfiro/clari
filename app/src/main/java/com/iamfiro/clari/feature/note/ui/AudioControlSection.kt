@@ -120,7 +120,7 @@ fun AudioControlSection(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.back_skip_5sec),
-                        contentDescription = "5초 뒤로",
+                        contentDescription = "Skip backward 5 seconds",
                         modifier = Modifier
                             .size(32.dp)
                             .alpha(if (isMediaReady) 0.7f else 0.3f)
@@ -155,7 +155,7 @@ fun AudioControlSection(
                             else -> {
                                 Icon(
                                     painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play),
-                                    contentDescription = if (isPlaying) "일시정지" else "재생",
+                                    contentDescription = if (isPlaying) "Pause" else "Play",
                                     tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(24.dp)
                                 )
@@ -167,7 +167,7 @@ fun AudioControlSection(
 
                     Icon(
                         painter = painterResource(R.drawable.skip_5sec),
-                        contentDescription = "5초 앞으로",
+                        contentDescription = "Skip forward 5 seconds",
                         modifier = Modifier
                             .size(32.dp)
                             .alpha(if (isMediaReady) 0.7f else 0.3f)
@@ -178,4 +178,3 @@ fun AudioControlSection(
         }
     }
 }
-

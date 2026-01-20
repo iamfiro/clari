@@ -26,13 +26,13 @@ fun NewRecordingFloating(
         icon = {
             Icon(
                 painter = painterResource(R.drawable.mic),
-                contentDescription = "녹음 추가",
+                contentDescription = "Add recording",
                 Modifier.size(20.dp)
             )
         },
         text = {
             Text(
-                text = "녹음하기",
+                text = "Record",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold
             )

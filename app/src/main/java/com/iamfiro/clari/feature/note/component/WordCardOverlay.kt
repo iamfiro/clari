@@ -94,11 +94,11 @@ fun WordCardOverlay(
         modifier = Modifier
             .fillMaxWidth()
             .padding(Dimens.ScreenPadding)
-            .offset(y = 80.dp), // 키워드 카드를 아래로 내림
+            .offset(y = 80.dp), // Move keyword cards down
         contentAlignment = Alignment.TopCenter
     ) {
         visibleKeywords.reversed().forEachIndexed { index, keyword ->
-            // 각 카드에 고유한 키 부여
+            // Assign unique key to each card
             key(keyword.name + keyword.description) {
                 AnimatedKeywordCard(
                     keyword = keyword,
@@ -110,7 +110,7 @@ fun WordCardOverlay(
         }
     }
 
-    // 이전 키워드 목록 업데이트
+    // Update previous keyword list
     LaunchedEffect(keywords) {
         previousKeywords = keywords
     }
@@ -126,16 +126,16 @@ private fun AnimatedKeywordCard(
     var isVisible by remember { mutableStateOf(false) }
     var hasAnimated by remember { mutableStateOf(false) }
     
-    // 카드가 나타날 때 애니메이션 트리거
+    // Trigger animation when card appears
     LaunchedEffect(Unit) {
         if (isNewCard && !hasAnimated) {
-            delay(50) // 약간의 딜레이로 애니메이션 시작
+            delay(50) // Small delay to start animation
         }
         isVisible = true
         hasAnimated = true
     }
     
-    // 스프링 기반 애니메이션
+    // Spring-based animation
     val targetOffsetY = index * 12.dp
     val animatedOffsetY by animateDpAsState(
         targetValue = if (isVisible) targetOffsetY else targetOffsetY + 100.dp,
@@ -163,7 +163,7 @@ private fun AnimatedKeywordCard(
         label = "alpha"
     )
     
-    // 회전 효과 (살짝 기울어지면서 등장)
+    // Rotation effect (appears with slight tilt)
     val animatedRotation by animateFloatAsState(
         targetValue = if (isVisible) 0f else -5f,
         animationSpec = spring(
@@ -182,7 +182,7 @@ private fun AnimatedKeywordCard(
                 scaleY = animatedScale
                 alpha = animatedAlpha
                 rotationZ = animatedRotation
-                // 3D 효과
+                // 3D effect
                 cameraDistance = 12f * density
             }
     ) {
@@ -217,7 +217,7 @@ fun WordCardOverlayItem(word: Word) {
                 modifier = Modifier.size(16.dp).alpha(0.5f)
             )
             Text(
-                "도메인 지식",
+                "Domain Knowledge",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.secondary,
                 fontWeight = FontWeight.SemiBold
@@ -264,7 +264,7 @@ fun KeywordCardOverlayItem(keyword: KeywordHit) {
                 modifier = Modifier.size(16.dp).alpha(0.5f)
             )
             Text(
-                "키워드 탐지",
+                "Keyword Detected",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.secondary,
                 fontWeight = FontWeight.SemiBold

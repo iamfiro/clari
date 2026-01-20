@@ -28,12 +28,12 @@ fun ProjectTabChips(
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         PrimaryFillChip(
-            text = "프로젝트",
+            text = "Projects",
             selected = selectedIndex == 0,
             onClick = { selectedIndex = 0 },
         )
         PrimaryFillChip(
-            text = "다운로드한 항목",
+            text = "Downloaded",
             selected = selectedIndex == 1,
             onClick = { selectedIndex = 1 },
         )

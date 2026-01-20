@@ -54,7 +54,7 @@ fun NoteCard(note: Note, onClick: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(painter = painterResource(R.drawable.timer), contentDescription = "timer", Modifier.alpha(.4f).size(12.dp))
                 Text(
-                    millisToMinutes(note.duration).toString() + "분",
+                    millisToMinutes(note.duration).toString() + " min",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary
                 )

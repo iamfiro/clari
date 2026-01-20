@@ -112,7 +112,7 @@ fun NoteDetailContent(
                 item {
                     Box(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
                         Text(
-                            "음성 기록",
+                            "Transcript",
                             style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
@@ -203,4 +203,3 @@ private fun ProjectChip(
         )
     }
 }
-

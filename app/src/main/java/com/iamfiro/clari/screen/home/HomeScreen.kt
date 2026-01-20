@@ -82,7 +82,7 @@ fun HomeScreen() {
 
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SectionTitle("최근에 사용한 프로젝트")
+                        SectionTitle("Recent Projects")
 
                         if (uiState.isLoading) {
                             ProjectCardSkeleton()
@@ -100,7 +100,7 @@ fun HomeScreen() {
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         if(uiState.words.isNotEmpty()) {
-                            SectionTitle("자주 등장하는 단어")
+                            SectionTitle("Frequently Appearing Words")
                         }
 
                         uiState.words.chunked(2).forEach { row ->

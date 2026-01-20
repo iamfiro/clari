@@ -77,7 +77,7 @@ fun ProjectCreateScreen() {
                     )
                 }
                 Text(
-                    "프로젝트 생성",
+                    "Create Project",
                     style = MaterialTheme.typography.titleLarge,
                     lineHeight = 32.sp,
                     fontWeight = FontWeight.SemiBold
@@ -89,7 +89,7 @@ fun ProjectCreateScreen() {
             OutlinedTextField(
                 value = projectName,
                 onValueChange = { viewModel.updateProjectName(it) },
-                label = { Text("프로젝트 이름") },
+                label = { Text("Project Name") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = !isLoading
@@ -103,7 +103,7 @@ fun ProjectCreateScreen() {
                 enabled = projectName.isNotBlank() && !isLoading,
                 shape = RoundedCornerShape(20.dp)
             ) {
-                Text("생성하기", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                Text("Create", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -111,10 +111,10 @@ fun ProjectCreateScreen() {
     ConfirmBottomSheet(
         visible = showConfirmSheet,
         onDismiss = { showConfirmSheet = false },
-        title = "프로젝트 생성",
-        message = "정말 생성하시겠습니까?",
-        confirmText = "생성",
-        cancelText = "취소",
+        title = "Create Project",
+        message = "Are you sure you want to create this project?",
+        confirmText = "Create",
+        cancelText = "Cancel",
         onConfirm = {
             viewModel.createProject(
                 onSuccess = { projectId ->

@@ -23,7 +23,7 @@ import com.iamfiro.clari.util.formatMmSs
 @Composable
 fun TranscribeSection(transcribe: List<TranscriptLine>) {
     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        Text("음성 기록", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+        Text("Transcript", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
 
         transcribe.map { transcribe ->
             Transcribe(transcribe)

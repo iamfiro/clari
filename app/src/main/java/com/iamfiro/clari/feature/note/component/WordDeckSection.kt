@@ -227,7 +227,7 @@ private fun DetectedTermCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 
-                // 설명
+                // Description
                 Text(
                     term.keyword.description,
                     style = MaterialTheme.typography.bodyMedium,

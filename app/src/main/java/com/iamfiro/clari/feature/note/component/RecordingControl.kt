@@ -54,7 +54,7 @@ fun RecordingControl(
     ) {
         Column {
             Text(
-                "소요시간",
+                "Elapsed Time",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.secondary,
                 fontWeight = FontWeight.Medium
@@ -65,11 +65,11 @@ fun RecordingControl(
                 fontWeight = FontWeight.SemiBold
             )
             
-            // 연결 상태 표시
+            // Connection status indicator
             ConnectionStatusIndicator(connectionState, isLoading)
         }
 
-        // 일시정지/재개 버튼
+        // Pause/Resume button
         Box(
             modifier = Modifier
                 .height(65.dp)
@@ -106,7 +106,7 @@ fun RecordingControl(
                         painter = painterResource(
                             if (isPaused) R.drawable.mic else R.drawable.pause
                         ),
-                        contentDescription = if (isPaused) "녹음 재개" else "일시정지",
+                        contentDescription = if (isPaused) "Resume recording" else "Pause",
                         tint = if (isRecording && !isPaused) {
                             MaterialTheme.colorScheme.error
                         } else if (isSystemInDarkTheme()) {
@@ -124,12 +124,12 @@ fun RecordingControl(
 @Composable
 private fun ConnectionStatusIndicator(connectionState: ConnectionState, isLoading: Boolean) {
     val (text, color) = when {
-        isLoading -> "세션 생성 중..." to MaterialTheme.colorScheme.primary
-        connectionState is ConnectionState.Disconnected -> "연결 대기" to MaterialTheme.colorScheme.onSurfaceVariant
-        connectionState is ConnectionState.Connecting -> "연결 중..." to MaterialTheme.colorScheme.primary
-        connectionState is ConnectionState.Connected -> "연결됨" to Color(0xFF4CAF50)
-        connectionState is ConnectionState.Error -> "연결 오류" to MaterialTheme.colorScheme.error
-        else -> "연결 대기" to MaterialTheme.colorScheme.onSurfaceVariant
+        isLoading -> "Creating session..." to MaterialTheme.colorScheme.primary
+        connectionState is ConnectionState.Disconnected -> "Waiting to connect" to MaterialTheme.colorScheme.onSurfaceVariant
+        connectionState is ConnectionState.Connecting -> "Connecting..." to MaterialTheme.colorScheme.primary
+        connectionState is ConnectionState.Connected -> "Connected" to Color(0xFF4CAF50)
+        connectionState is ConnectionState.Error -> "Connection error" to MaterialTheme.colorScheme.error
+        else -> "Waiting to connect" to MaterialTheme.colorScheme.onSurfaceVariant
     }
     
     Text(

@@ -35,13 +35,13 @@ fun ProjectDetailWords(
                 top = 24.dp
             )
         ) {
-            SectionTitle("단어")
+            SectionTitle("Words")
             Spacer(modifier = Modifier.height(12.dp))
         }
 
         if (words.isEmpty()) {
             Text(
-                text = "단어가 없습니다",
+                text = "No words",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.padding(horizontal = Dimens.ScreenPadding)

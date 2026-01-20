@@ -33,10 +33,10 @@ fun ProjectCardBlank(showButton: Boolean = true, onClick: (() -> Unit)? = null) 
             .padding(20.dp)
     ) {
         Icon(painter = painterResource(R.drawable.folder_x), "no_card", Modifier.alpha(0.5f))
-        Text("프로젝트가 존재하지 않습니다", color = MaterialTheme.colorScheme.primary)
+        Text("No projects exist", color = MaterialTheme.colorScheme.primary)
         if(showButton) {
             Button({ onClick?.invoke() }) {
-                Text("바로가기")
+                Text("Go")
             }
         }
     }

@@ -51,6 +51,6 @@ fun GoogleLoginButton(
             modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.width(8.dp))
-        Text("Google로 계속하기", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
+        Text("Continue with Google", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
     }
 }

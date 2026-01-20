@@ -46,12 +46,12 @@ fun RecordingHeader(
                 modifier = Modifier.align(Alignment.Center)
             ) {
                 Text(
-                    "여기를 눌러서 제목 변경",
+                    "Tap here to change title",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    "2025년 12월 24일", 
+                    "December 24, 2025", 
                     style = MaterialTheme.typography.labelSmall, 
                     color = MaterialTheme.colorScheme.secondary
                 )
@@ -62,7 +62,7 @@ fun RecordingHeader(
                 modifier = Modifier.align(Alignment.CenterEnd).offset(x = 12.dp)
             ) {
                 Text(
-                    "종료하기",
+                    "End",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.error
@@ -78,7 +78,7 @@ fun RecordingHeader(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "⏸ 일시중지됨",
+                    "⏸ Paused",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.tertiary,
                     fontWeight = FontWeight.SemiBold

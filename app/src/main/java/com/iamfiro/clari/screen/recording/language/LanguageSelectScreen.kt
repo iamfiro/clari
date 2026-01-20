@@ -63,7 +63,7 @@ fun LanguageSelectScreen(projectId: String) {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                item { HeaderWithBackButton("실시간 음성 인식에 사용할\n언어를 선택해주세요") }
+                item { HeaderWithBackButton("Select a language for\nreal-time speech recognition") }
 
                 item { Spacer(Modifier.height(4.dp)) }
 
@@ -150,7 +150,7 @@ fun LanguageSelectScreen(projectId: String) {
                         .height(60.dp)
                 ) {
                     Text(
-                        if (selectedLanguage != null) "눌러서 시작하기" else "언어를 선택해주세요",
+                        if (selectedLanguage != null) "Press to Start" else "Please select a language",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold
                     )

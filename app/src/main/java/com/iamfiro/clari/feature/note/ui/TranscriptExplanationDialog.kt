@@ -109,7 +109,7 @@ fun TranscriptExplanationDialog(
                             modifier = Modifier.size(20.dp),
                         )
                         Text(
-                            "AI 설명",
+                            "AI Explanation",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -125,7 +125,7 @@ fun TranscriptExplanationDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "닫기",
+                            contentDescription = "Close",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
@@ -188,7 +188,7 @@ fun TranscriptExplanationDialog(
                                     strokeWidth = 3.dp
                                 )
                                 Text(
-                                    "분석 중...",
+                                    "Analyzing...",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.secondary
                                 )

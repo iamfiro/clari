@@ -92,12 +92,12 @@ fun ExternalResourceListScreen() {
                 onClick = { showAddSheet = true },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "리소스 추가")
+                Icon(Icons.Default.Add, contentDescription = "Add resource")
             }
         }
     ) { innerPadding ->
         Column(Modifier.padding(innerPadding)) {
-            Header("외부 리소스")
+            Header("External Resources")
 
             when {
                 isLoading -> {
@@ -115,13 +115,13 @@ fun ExternalResourceListScreen() {
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                "등록된 외부 리소스가 없습니다",
+                                "No external resources registered",
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.secondary
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                "URL을 추가하여 녹음 시 힌트를 받아보세요",
+                                "Add URLs to get hints while recording",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -155,10 +155,10 @@ fun ExternalResourceListScreen() {
             showAddSheet = false
             urlInput = ""
         },
-        title = "외부 리소스 추가",
+        title = "Add External Resource",
         actions = listOf(
             BottomSheetAction.Primary(
-                text = if (isAddingResource) "추가 중..." else "추가",
+                text = if (isAddingResource) "Adding..." else "Add",
                 enabled = urlInput.isNotBlank() && !isAddingResource,
                 onClick = {
                     viewModel.addResource(urlInput) {
@@ -171,15 +171,15 @@ fun ExternalResourceListScreen() {
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                "웹 페이지 URL을 입력하면 내용을 분석하여\n녹음 시 관련 힌트를 제공합니다.",
+                "Enter a webpage URL and we'll analyze its content\nto provide relevant hints while recording.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary
             )
-            
+
             OutlinedTextField(
                 value = urlInput,
                 onValueChange = { urlInput = it },
-                label = { Text("URL 입력") },
+                label = { Text("Enter URL") },
                 placeholder = { Text("https://example.com") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -273,7 +273,7 @@ private fun ExternalResourceCard(
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "삭제",
+                    contentDescription = "Delete",
                     tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                 )
             }

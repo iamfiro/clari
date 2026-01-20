@@ -34,13 +34,13 @@ fun ProjectDetailConnectors(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            SectionTitle("외부 연결")
+            SectionTitle("External Links")
             if (onAddClick != null) {
                 OutlinedButton(
                     onClick = onAddClick,
                     modifier = Modifier.height(32.dp)
                 ) {
-                    Text("추가", style = MaterialTheme.typography.labelMedium)
+                    Text("Add", style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
@@ -53,7 +53,7 @@ fun ProjectDetailConnectors(
         }
         if (connectors.isNullOrEmpty()) {
             Text(
-                "외부 연결이 없습니다",
+                "No external links",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary
             )

@@ -110,7 +110,7 @@ fun RecordingScreen(
             viewModel.startRecording()
         } else {
             scope.launch {
-                snackbarHostState.showSnackbar("마이크 권한이 필요합니다")
+                snackbarHostState.showSnackbar("Microphone permission is required")
             }
         }
     }
@@ -135,7 +135,7 @@ fun RecordingScreen(
         when (connectionState) {
             is SessionConnectionState.Error -> {
                 val errorMsg = (connectionState as SessionConnectionState.Error).message
-                snackbarHostState.showSnackbar("연결 오류: $errorMsg")
+                snackbarHostState.showSnackbar("Connection error: $errorMsg")
             }
             else -> {}
         }
@@ -236,14 +236,14 @@ fun RecordingScreen(
 
         ConfirmBottomSheet(
             visible = showConfirmBottomSheet,
-            onDismiss = { 
+            onDismiss = {
                 showConfirmBottomSheet = false
                 viewModel.resumeRecording()
             },
-            title = "녹음을 저장하시겠어요?",
-            message = "지금까지 녹음한 내용이 저장됩니다.",
-            confirmText = "저장하기",
-            cancelText = "취소",
+            title = "Save recording?",
+            message = "Your recording will be saved.",
+            confirmText = "Save",
+            cancelText = "Cancel",
             onConfirm = {
                 isSaving = true
                 viewModel.stopRecording { noteId ->
@@ -258,7 +258,7 @@ fun RecordingScreen(
                     } else {
                         Log.e(TAG, "녹음 저장 실패")
                         scope.launch {
-                            snackbarHostState.showSnackbar("녹음 저장에 실패했습니다")
+                            snackbarHostState.showSnackbar("Failed to save recording")
                         }
                         backStack.removeLastOrNull()
                     }
@@ -272,14 +272,14 @@ fun RecordingScreen(
 
         ConfirmBottomSheet(
             visible = showCancelBottomSheet,
-            onDismiss = { 
+            onDismiss = {
                 showCancelBottomSheet = false
                 viewModel.resumeRecording()
             },
-            title = if (elapsedSeconds < 10) "녹음이 10초 미만입니다" else "녹음을 취소하시겠어요?",
-            message = if (elapsedSeconds < 10) "10초 이내의 녹음은 저장되지 않습니다. 그래도 계속하시겠어요?" else "녹음한 내용이 모두 삭제됩니다.",
-            confirmText = if (elapsedSeconds < 10) "삭제하기" else "취소하기",
-            cancelText = "돌아가기",
+            title = if (elapsedSeconds < 10) "Recording is less than 10 seconds" else "Cancel recording?",
+            message = if (elapsedSeconds < 10) "Recordings under 10 seconds will not be saved. Continue anyway?" else "Your recording will be deleted.",
+            confirmText = if (elapsedSeconds < 10) "Delete" else "Cancel Recording",
+            cancelText = "Go Back",
             onConfirm = {
                 viewModel.cancelRecording()
                 backStack.removeLastOrNull()

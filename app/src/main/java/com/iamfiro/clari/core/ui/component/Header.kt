@@ -24,6 +24,6 @@ fun Header(title: String? = null) {
             .fillMaxWidth()
     ) {
         if(title != null)
-            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) else Text("로고")
+            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) else Text("Logo")
     }
 }

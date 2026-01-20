@@ -86,7 +86,7 @@ fun ProjectCard(
 //                                tint = MaterialTheme.colorScheme.primary
 //                            )
                             Text(
-                                "저장됨",
+                                "Saved",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -96,7 +96,7 @@ fun ProjectCard(
             }
 
             Text(
-                "지식 ${project.word.size}개",
+                "${project.word.size} words",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.secondary,
             )

@@ -102,12 +102,12 @@ fun ExternalResourceDetailScreen(resourceId: String) {
                 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     IconButton(onClick = { showEditSheet = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = "편집")
+                        Icon(Icons.Default.Edit, contentDescription = "Edit")
                     }
-                    IconButton(onClick = { 
+                    IconButton(onClick = {
                         resource?.url?.let { uriHandler.openUri(it) }
                     }) {
-                        Icon(Icons.Default.Share, contentDescription = "열기")
+                        Icon(Icons.Default.Share, contentDescription = "Open")
                     }
                 }
             }
@@ -127,7 +127,7 @@ fun ExternalResourceDetailScreen(resourceId: String) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            error ?: "알 수 없는 오류",
+                            error ?: "Unknown error",
                             color = MaterialTheme.colorScheme.error
                         )
                     }
@@ -187,9 +187,9 @@ fun ExternalResourceDetailScreen(resourceId: String) {
                         Spacer(Modifier.height(24.dp))
 
                         if (!resource!!.scrapedContent.isNullOrBlank()) {
-                            SectionTitle("스크랩된 내용")
+                            SectionTitle("Scraped Content")
                             Spacer(Modifier.height(12.dp))
-                            
+
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
@@ -211,7 +211,7 @@ fun ExternalResourceDetailScreen(resourceId: String) {
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    "스크랩된 내용이 없습니다",
+                                    "No scraped content",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.secondary
                                 )
@@ -231,10 +231,10 @@ fun ExternalResourceDetailScreen(resourceId: String) {
             showEditSheet = false
             editTitle = resource?.title ?: ""
         },
-        title = "제목 수정",
+        title = "Edit Title",
         actions = listOf(
             BottomSheetAction.Primary(
-                text = "저장",
+                text = "Save",
                 enabled = editTitle.isNotBlank() && editTitle.length <= 10,
                 onClick = {
                     CoroutineScope(Dispatchers.Main).launch {
@@ -252,7 +252,7 @@ fun ExternalResourceDetailScreen(resourceId: String) {
             OutlinedTextField(
                 value = editTitle,
                 onValueChange = { if (it.length <= 10) editTitle = it },
-                label = { Text("제목 (최대 10자)") },
+                label = { Text("Title (max 10 characters)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 supportingText = { Text("${editTitle.length}/10") }

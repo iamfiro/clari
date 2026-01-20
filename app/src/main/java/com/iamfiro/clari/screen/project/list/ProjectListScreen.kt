@@ -67,7 +67,7 @@ fun ProjectListScreen() {
                     .padding(innerPadding)
             ) {
                 Column(Modifier.fillMaxSize()) {
-                    Header("프로젝트")
+                    Header("Projects")
 
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -80,7 +80,7 @@ fun ProjectListScreen() {
                         } else {
                             if (uiState.ownedProjects.isNotEmpty()) {
                                 item {
-                                    SectionTitle("내 프로젝트")
+                                    SectionTitle("My Projects")
                                 }
                                 items(
                                     items = uiState.ownedProjects,
@@ -93,7 +93,7 @@ fun ProjectListScreen() {
                             if (uiState.savedProjects.isNotEmpty()) {
                                 item {
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    SectionTitle("저장한 프로젝트")
+                                    SectionTitle("Saved Projects")
                                 }
                                 items(
                                     items = uiState.savedProjects,
@@ -118,13 +118,13 @@ fun ProjectListScreen() {
         onDismiss = { viewModel.hideMenuModal() },
         items = listOf(
             BottomSheetMenuItem(
-                title = "프로젝트 생성",
+                title = "Create Project",
                 onClick = {
                     backStack.add(Screen.ProjectCreate)
                 }
             ),
             BottomSheetMenuItem(
-                title = "URL에서 가져오기",
+                title = "Import from URL",
                 onClick = {
                     viewModel.showImportSheet()
                 }
@@ -135,10 +135,10 @@ fun ProjectListScreen() {
     BottomSheetWithHeader(
         visible = uiState.showImportSheet,
         onDismiss = { viewModel.hideImportSheet() },
-        title = "URL에서 가져오기",
+        title = "Import from URL",
         actions = listOf(
             BottomSheetAction.Primary(
-                text = "가져오기",
+                text = "Import",
                 enabled = uiState.importUrl.isNotBlank(),
                 onClick = {
                     if (uiState.importUrl.isNotBlank()) {
@@ -151,7 +151,7 @@ fun ProjectListScreen() {
         OutlinedTextField(
             value = uiState.importUrl,
             onValueChange = { viewModel.updateImportUrl(it) },
-            label = { Text("URL 입력") },
+            label = { Text("Enter URL") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )

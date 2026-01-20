@@ -151,7 +151,7 @@ fun ProjectDetailScreen(projectId: String) {
                     item {
                         ProjectDetailHeader(
                             projectName = project.name,
-                            createdAt = "2025년 12월 25일 생성"
+                            createdAt = "Created on December 25, 2025"
                         )
                     }
                     
@@ -377,7 +377,7 @@ fun ProjectDetailScreen(projectId: String) {
             onTogglePublic = { viewModel.togglePublic() },
             onCopyLink = {
                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                val clip = ClipData.newPlainText("공유 링크", shareLink)
+                val clip = ClipData.newPlainText("Share Link", shareLink)
                 clipboard.setPrimaryClip(clip)
                 showShareSheet = false
             }

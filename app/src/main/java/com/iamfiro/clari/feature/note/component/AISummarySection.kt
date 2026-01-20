@@ -28,7 +28,7 @@ fun AISummarySection(aiSummary: String) {
                 "AI Sparkle",
                 modifier = Modifier.size(14.dp)
             )
-            Text("AI 요약", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text("AI Summary", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         }
         Text(
             aiSummary,

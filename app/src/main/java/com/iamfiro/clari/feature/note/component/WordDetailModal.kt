@@ -105,7 +105,7 @@ fun WordDetailModal(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
-                                        contentDescription = "닫기",
+                                        contentDescription = "Close",
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }

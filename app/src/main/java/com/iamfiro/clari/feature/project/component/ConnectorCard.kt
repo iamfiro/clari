@@ -89,7 +89,7 @@ fun ConnectorCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "삭제",
+                        contentDescription = "Delete",
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -98,4 +98,3 @@ fun ConnectorCard(
         }
     }
 }
-

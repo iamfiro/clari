@@ -108,7 +108,7 @@ fun TranscribeContainer(
         if (transcriptItems.isEmpty() && partialText == null) {
             item {
                 Text(
-                    "녹음을 시작하면 음성이 텍스트로 변환됩니다",
+                    "Voice will be transcribed to text when recording starts",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Normal
@@ -125,24 +125,24 @@ private fun TranscribeTextItem(
     var showFormattedIndicator by remember { mutableStateOf(false) }
     var previousIsFormatted by remember { mutableStateOf(item.isFormatted) }
     
-    // formatted가 새로 적용되면 인디케이터 표시
+    // Show indicator when formatted is newly applied
     LaunchedEffect(item.isFormatted) {
         if (item.isFormatted && !previousIsFormatted) {
             showFormattedIndicator = true
-            delay(2000) // 2초 후 인디케이터 숨김
+            delay(2000) // Hide indicator after 2 seconds
             showFormattedIndicator = false
         }
         previousIsFormatted = item.isFormatted
     }
     
     val textColor = if (item.isFormatted) {
-        MaterialTheme.colorScheme.primary // 파란색 - Formatted
+        MaterialTheme.colorScheme.primary // Blue - Formatted
     } else {
-        MaterialTheme.colorScheme.onSurface // 기본색 - Committed
+        MaterialTheme.colorScheme.onSurface // Default - Committed
     }
     
     Column {
-        // Formatted 인디케이터 (AI 교정됨 표시)
+        // Formatted indicator (AI corrected badge)
         AnimatedVisibility(
             visible = showFormattedIndicator,
             enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { -it },
@@ -156,7 +156,7 @@ private fun TranscribeTextItem(
                     .padding(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = "✨ AI 교정됨",
+                    text = "✨ AI Corrected",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -166,9 +166,9 @@ private fun TranscribeTextItem(
         AnimatedContent(
             targetState = Triple(item.displayChunks, item.isFormatted, textColor),
             transitionSpec = {
-                // formatted 전환 시 더 눈에 띄는 애니메이션
+                // More noticeable animation during formatted transition
                 if (targetState.second && !initialState.second) {
-                    // committed -> formatted: 슬라이드 + 페이드
+                    // committed -> formatted: slide + fade
                     (fadeIn(tween(400)) + slideInVertically(tween(400)) { -it / 4 }) togetherWith
                             (fadeOut(tween(200)) + slideOutVertically(tween(200)) { it / 4 })
                 } else {
@@ -179,7 +179,7 @@ private fun TranscribeTextItem(
         ) { (chunks, isFormatted, color) ->
             Column {
                 chunks.forEachIndexed { index, chunk ->
-                    // 각 청크별 폰트 사이즈 계산
+                    // Calculate font size for each chunk
                     val chunkFontSize = calculateFontSize(chunk)
                     val chunkLineHeight = calculateLineHeight(chunkFontSize)
                     
@@ -202,7 +202,7 @@ private fun TranscribeTextItem(
 private fun PartialTextItem(
     chunks: List<String>
 ) {
-    // 깜빡이는 효과를 위한 alpha 애니메이션
+    // Alpha animation for blinking effect
     var blinkState by remember { mutableStateOf(true) }
     val alpha by animateFloatAsState(
         targetValue = if (blinkState) 0.7f else 0.5f,

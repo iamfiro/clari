@@ -30,12 +30,12 @@ fun ProjectDetailErrorState(
             modifier = Modifier.padding(Dimens.ScreenPadding)
         ) {
             Text(
-                text = errorMessage ?: "프로젝트를 찾을 수 없습니다.",
+                text = errorMessage ?: "Project not found.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.error
             )
             Button(onClick = onRetryClick) {
-                Text("다시 시도")
+                Text("Retry")
             }
         }
     }

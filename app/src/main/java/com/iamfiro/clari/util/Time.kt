@@ -44,12 +44,12 @@ fun toRelativeDateLabel(dateTime: LocalDateTime, now: LocalDateTime): String {
     val today = now.toLocalDate()
 
     return when {
-        date == today -> "오늘"
-        date == today.minusDays(1) -> "어제"
+        date == today -> "Today"
+        date == today.minusDays(1) -> "Yesterday"
         date.year == today.year ->
-            date.format(DateTimeFormatter.ofPattern("M월 d일"))
+            date.format(DateTimeFormatter.ofPattern("MMM d"))
         else ->
-            date.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일"))
+            date.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
     }
 }
 

@@ -54,10 +54,10 @@ import kotlinx.coroutines.launch
 private const val TAG = "RegisterContinueScreen"
 
 private val roleOptions = listOf(
-    "개발자", "디자이너", "마케터", "기획자", "데이터 분석가",
-    "프로덕트 매니저", "학생", "선생님", "교수", "연구원",
-    "회계사", "변호사", "의사", "간호사", "약사",
-    "영업", "인사", "경영", "컨설턴트", "프리랜서"
+    "Developer", "Designer", "Marketer", "Product Manager", "Data Analyst",
+    "Project Manager", "Student", "Teacher", "Professor", "Researcher",
+    "Accountant", "Lawyer", "Doctor", "Nurse", "Pharmacist",
+    "Sales", "HR", "Business", "Consultant", "Freelancer"
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -119,7 +119,7 @@ fun RegisterContinueScreen() {
                     Log.e(TAG, "회원가입 완료 실패", error)
                     Toast.makeText(
                         context,
-                        "회원가입 완료에 실패했습니다: ${error.message}",
+                        "Registration failed: ${error.message}",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -208,7 +208,7 @@ fun RegisterContinueScreen() {
                     )
                 } else {
                     Text(
-                        if (currentStep == 0) "다음" else "시작하기",
+                        if (currentStep == 0) "Next" else "Get Started",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -225,16 +225,16 @@ private fun NameInputStep(
     focusRequester: FocusRequester
 ) {
     Text(
-        text = "이름을 알려주세요",
+        text = "What's your name?",
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onSurface
     )
-    
+
     Spacer(modifier = Modifier.height(8.dp))
-    
+
     Text(
-        text = "Clari에서 사용할 이름이에요",
+        text = "This will be your name in Clari",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.secondary
     )
@@ -249,7 +249,7 @@ private fun NameInputStep(
             .focusRequester(focusRequester),
         placeholder = {
             Text(
-                "이름을 입력해주세요",
+                "Enter your name",
                 color = MaterialTheme.colorScheme.secondary
             )
         },
@@ -274,16 +274,16 @@ private fun RoleSelectionStep(
     focusRequester: FocusRequester
 ) {
     Text(
-        text = "어떤 일을 하시나요?",
+        text = "What do you do?",
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onSurface
     )
-    
+
     Spacer(modifier = Modifier.height(8.dp))
-    
+
     Text(
-        text = "맞춤화된 AI 설명을 제공해드려요",
+        text = "We'll provide personalized AI explanations",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.secondary
     )
@@ -311,7 +311,7 @@ private fun RoleSelectionStep(
             )
         } else {
             RoleChip(
-                text = "직접 입력",
+                text = "Custom",
                 isSelected = false,
                 onClick = onCustomInputClick
             )
@@ -395,7 +395,7 @@ private fun CustomInputChip(
                 Box {
                     if (value.isEmpty()) {
                         Text(
-                            text = "직접 입력해주세요",
+                            text = "Enter your role",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.secondary
                         )

@@ -58,7 +58,7 @@ fun ProjectDetailActionButtons(
                     .height(60.dp)
             ) {
                 Text(
-                    "단어 추가",
+                    "Add Word",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -83,7 +83,7 @@ fun ProjectDetailActionButtons(
                     )
                 } else {
                     Text(
-                        "AI 단어 추가",
+                        "AI Add Word",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold
                     )

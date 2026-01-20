@@ -156,7 +156,7 @@ fun OnboardScreen() {
                         }
                         Toast.makeText(
                             context,
-                            "로그인에 실패했습니다: ${error.message}",
+                            "Login failed: ${error.message}",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -165,11 +165,11 @@ fun OnboardScreen() {
             } catch (e: GetCredentialException) {
                 Log.e(TAG, "Credential 획득 실패 - 타입: ${e.javaClass.simpleName}, 메시지: ${e.message}", e)
                 e.printStackTrace()
-                Toast.makeText(context, "Google 로그인이 취소되었습니다", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Google login cancelled", Toast.LENGTH_SHORT).show()
             } catch (e: GoogleIdTokenParsingException) {
                 Log.e(TAG, "Google 토큰 파싱 실패 - 메시지: ${e.message}", e)
                 e.printStackTrace()
-                Toast.makeText(context, "인증 정보 처리 중 오류가 발생했습니다", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "An error occurred while processing authentication", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Log.e(
                     TAG,
@@ -177,7 +177,7 @@ fun OnboardScreen() {
                     e
                 )
                 e.printStackTrace()
-                Toast.makeText(context, "로그인 중 오류가 발생했습니다", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "An error occurred during login", Toast.LENGTH_SHORT).show()
             } finally {
                 isLoading = false
                 Log.d(TAG, "구글 로그인 프로세스 종료 - isLoading: false")
@@ -227,7 +227,7 @@ fun OnboardScreen() {
                                 color = MaterialTheme.colorScheme.secondary
                             )
                         ) {
-                            append("어느 상황에서도\n회의 중 모르는 내용은\n")
+                            append("Whenever you encounter something unfamiliar in a meeting,\n")
                         }
 
                         withStyle(
@@ -235,7 +235,7 @@ fun OnboardScreen() {
                                 color = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            append("Clari가 쉽게 정리해드려요")
+                            append("Clari will organize it for you")
                         }
 
                     },
@@ -251,7 +251,7 @@ fun OnboardScreen() {
 //                        AppleLoginButton(enabled = !isLoading)
 
                         Text(
-                            "계속 진행하시면 이용약관 및 개인정보처리방침에 동의합니다.",
+                            "By continuing, you agree to our Terms of Service and Privacy Policy.",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.secondary,
                             textAlign = TextAlign.Center,

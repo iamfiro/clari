@@ -81,10 +81,10 @@ fun AddWordBottomSheet(
     BottomSheetWithHeader(
         visible = visible,
         onDismiss = onDismiss,
-        title = "단어 추가",
+        title = "Add Word",
         actions = listOf(
             BottomSheetAction.Primary(
-                text = "추가",
+                text = "Add",
                 enabled = wordName.isNotBlank() && wordMeaning.isNotBlank(),
                 onClick = onAdd
             )
@@ -93,7 +93,7 @@ fun AddWordBottomSheet(
         OutlinedTextField(
             value = wordName,
             onValueChange = onWordNameChange,
-            label = { Text("단어 이름") },
+            label = { Text("Word Name") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             trailingIcon = {
@@ -110,7 +110,7 @@ fun AddWordBottomSheet(
                         } else {
                             Icon(
                                 Icons.Default.Refresh,
-                                contentDescription = "AI 제안 가져오기",
+                                contentDescription = "Get AI Suggestions",
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -128,7 +128,7 @@ fun AddWordBottomSheet(
         OutlinedTextField(
             value = wordMeaning,
             onValueChange = onWordMeaningChange,
-            label = { Text("단어 뜻") },
+            label = { Text("Word Meaning") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = false
         )
@@ -158,7 +158,7 @@ fun AddWordBottomSheet(
                     val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                         putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                         putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
-                        putExtra(RecognizerIntent.EXTRA_PROMPT, "단어 뜻을 말씀해주세요")
+                        putExtra(RecognizerIntent.EXTRA_PROMPT, "Please say the word meaning")
                     }
 
                     if (intent.resolveActivity(context.packageManager) != null) {
@@ -173,14 +173,14 @@ fun AddWordBottomSheet(
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(painter = painterResource(R.drawable.mic), "", modifier = Modifier.size(16.dp))
-                    Text("음성 인식", fontWeight = FontWeight.Bold)
+                    Text("Voice Input", fontWeight = FontWeight.Bold)
                 }
             }
 
             Button(
                 onClick = {
                     if (wordName.isBlank()) {
-                        Toast.makeText(context, "단어 이름을 입력해주세요", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Please enter the word name", Toast.LENGTH_SHORT).show()
                     } else if (onGenerateDescription != null) {
                         isGeneratingDescription = true
                         scope.launch {
@@ -190,7 +190,7 @@ fun AddWordBottomSheet(
                                     isGeneratingDescription = false
                                 }
                                 .onFailure {
-                                    Toast.makeText(context, "AI 생성에 실패했습니다", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "AI generation failed", Toast.LENGTH_SHORT).show()
                                     generatedSuggestions = emptyList()
                                     isGeneratingDescription = false
                                 }
@@ -213,7 +213,7 @@ fun AddWordBottomSheet(
                     } else {
                         Icon(painter = painterResource(R.drawable.sparkles), "", modifier = Modifier.size(16.dp))
                     }
-                    Text("AI 생성", fontWeight = FontWeight.Bold)
+                    Text("AI Generate", fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -222,7 +222,7 @@ fun AddWordBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                "AI 생성 결과 (선택하세요)",
+                "AI Generated Results (Select one)",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -269,10 +269,10 @@ fun DeleteWordBottomSheet(
     ConfirmBottomSheet(
         visible = visible,
         onDismiss = onDismiss,
-        title = "단어 삭제",
-        message = "정말 이 단어를 삭제하시겠습니까?",
-        confirmText = "삭제",
-        cancelText = "취소",
+        title = "Delete Word",
+        message = "Are you sure you want to delete this word?",
+        confirmText = "Delete",
+        cancelText = "Cancel",
         isDestructive = true,
         onConfirm = {
             val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -311,10 +311,10 @@ fun AddConnectorBottomSheet(
     BottomSheetWithHeader(
         visible = visible,
         onDismiss = onDismiss,
-        title = "외부 연결 추가",
+        title = "Add External Link",
         actions = listOf(
             BottomSheetAction.Primary(
-                text = if (isAdding) "추가 중..." else "추가",
+                text = if (isAdding) "Adding..." else "Add",
                 enabled = selectedConnectorType != null && connectorName.isNotBlank() && connectorUrl.isNotBlank() && !isAdding,
                 onClick = onAdd
             )
@@ -383,7 +383,7 @@ fun AddConnectorBottomSheet(
         OutlinedTextField(
             value = connectorName,
             onValueChange = onConnectorNameChange,
-            label = { Text("연결 이름") },
+            label = { Text("Link Name") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -391,7 +391,7 @@ fun AddConnectorBottomSheet(
         OutlinedTextField(
             value = connectorUrl,
             onValueChange = onConnectorUrlChange,
-            label = { Text("링크") },
+            label = { Text("URL") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -413,7 +413,7 @@ fun EditConnectorBottomSheet(
     BottomSheetWithHeader(
         visible = visible,
         onDismiss = onDismiss,
-        title = "외부 연결 수정",
+        title = "Edit External Link",
         titleIcon = {
             Icon(
                 painter = painterResource(
@@ -428,12 +428,12 @@ fun EditConnectorBottomSheet(
         },
         actions = listOf(
             BottomSheetAction.Secondary(
-                text = "삭제",
+                text = "Delete",
                 onClick = onDelete,
                 enabled = true
             ),
             BottomSheetAction.Primary(
-                text = "저장",
+                text = "Save",
                 enabled = connectorName.isNotBlank() && connectorUrl.isNotBlank(),
                 onClick = onSave
             )
@@ -442,7 +442,7 @@ fun EditConnectorBottomSheet(
         OutlinedTextField(
             value = connectorName,
             onValueChange = onConnectorNameChange,
-            label = { Text("연결 이름") },
+            label = { Text("Link Name") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -450,7 +450,7 @@ fun EditConnectorBottomSheet(
         OutlinedTextField(
             value = connectorUrl,
             onValueChange = onConnectorUrlChange,
-            label = { Text("링크") },
+            label = { Text("URL") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -466,10 +466,10 @@ fun DeleteConnectorBottomSheet(
     ConfirmBottomSheet(
         visible = visible,
         onDismiss = onDismiss,
-        title = "외부 연결 삭제",
-        message = "정말 이 연결을 삭제하시겠습니까?",
-        confirmText = "삭제",
-        cancelText = "취소",
+        title = "Delete External Link",
+        message = "Are you sure you want to delete this link?",
+        confirmText = "Delete",
+        cancelText = "Cancel",
         isDestructive = true,
         onConfirm = onConfirm
     )
@@ -488,10 +488,10 @@ fun ShareProjectBottomSheet(
     BottomSheetWithHeader(
         visible = visible,
         onDismiss = onDismiss,
-        title = "프로젝트 공유",
+        title = "Share Project",
         actions = listOf(
             BottomSheetAction.Primary(
-                text = "링크 복사",
+                text = "Copy Link",
                 enabled = isPublic,
                 onClick = onCopyLink
             )
@@ -505,12 +505,12 @@ fun ShareProjectBottomSheet(
             ) {
                 Column {
                     Text(
-                        "공개 설정",
+                        "Public Settings",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        if (isPublic) "누구나 링크로 접근 가능" else "나만 볼 수 있음",
+                        if (isPublic) "Anyone with the link can access" else "Only visible to me",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -527,7 +527,7 @@ fun ShareProjectBottomSheet(
                 OutlinedTextField(
                     value = shareLink,
                     onValueChange = {},
-                    label = { Text("공유 링크") },
+                    label = { Text("Share Link") },
                     modifier = Modifier.fillMaxWidth(),
                     readOnly = true,
                     singleLine = true
@@ -541,7 +541,7 @@ fun ShareProjectBottomSheet(
                         .padding(16.dp)
                 ) {
                     Text(
-                        "프로젝트를 공개로 설정하면 링크가 생성됩니다",
+                        "A link will be created when you set the project to public",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -572,7 +572,7 @@ fun SavedProjectInfoSection(
         ) {
             Column {
                 Text(
-                    "저장한 프로젝트",
+                    "Saved Project",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold
@@ -595,7 +595,7 @@ fun SavedProjectInfoSection(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("저장 해제", style = MaterialTheme.typography.labelMedium)
+                    Text("Unsave", style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
@@ -611,10 +611,10 @@ fun UnsaveProjectBottomSheet(
     ConfirmBottomSheet(
         visible = visible,
         onDismiss = onDismiss,
-        title = "저장 해제",
-        message = "이 프로젝트를 저장 목록에서 제거하시겠습니까?",
-        confirmText = "저장 해제",
-        cancelText = "취소",
+        title = "Unsave",
+        message = "Do you want to remove this project from your saved list?",
+        confirmText = "Unsave",
+        cancelText = "Cancel",
         isDestructive = true,
         onConfirm = onConfirm
     )
@@ -629,10 +629,10 @@ fun DeleteProjectBottomSheet(
     ConfirmBottomSheet(
         visible = visible,
         onDismiss = onDismiss,
-        title = "프로젝트 삭제",
-        message = "정말 이 프로젝트를 삭제하시겠습니까?",
-        confirmText = "삭제",
-        cancelText = "취소",
+        title = "Delete Project",
+        message = "Are you sure you want to delete this project?",
+        confirmText = "Delete",
+        cancelText = "Cancel",
         isDestructive = true,
         onConfirm = onConfirm
     )
@@ -652,15 +652,15 @@ fun AiAutofillBottomSheet(
     BottomSheetWithHeader(
         visible = visible,
         onDismiss = onDismiss,
-        title = "AI 자동채우기",
+        title = "AI Autofill",
         actions = listOf(
             BottomSheetAction.Secondary(
-                text = if (isLoading) "생성 중..." else "키워드 생성",
+                text = if (isLoading) "Generating..." else "Generate Keywords",
                 onClick = onGenerate,
                 enabled = query.isNotBlank() && !isLoading
             ),
             BottomSheetAction.Primary(
-                text = "추가하기",
+                text = "Apply",
                 enabled = generatedWords.isNotEmpty() && !isLoading,
                 onClick = onApply
             )
@@ -668,7 +668,7 @@ fun AiAutofillBottomSheet(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                "주제나 분야를 입력하면 AI가 관련 키워드를 생성합니다.",
+                "Enter a topic or field and AI will generate related keywords.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary
             )
@@ -676,8 +676,8 @@ fun AiAutofillBottomSheet(
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                label = { Text("주제 입력") },
-                placeholder = { Text("예: AWS 클라우드 서비스, 머신러닝 기초") },
+                label = { Text("Enter Topic") },
+                placeholder = { Text("e.g., AWS Cloud Services, Machine Learning Basics") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = !isLoading
@@ -693,13 +693,13 @@ fun AiAutofillBottomSheet(
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
                     Spacer(Modifier.width(12.dp))
-                    Text("키워드 생성 중...")
+                    Text("Generating keywords...")
                 }
             }
             
             if (generatedWords.isNotEmpty()) {
                 Text(
-                    "${generatedWords.size}개 키워드 생성됨",
+                    "${generatedWords.size}keywords generated",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -735,7 +735,7 @@ fun AiAutofillBottomSheet(
                     
                     if (generatedWords.size > 10) {
                         Text(
-                            "외 ${generatedWords.size - 10}개 더...",
+                            "and ${generatedWords.size - 10}more...",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.padding(horizontal = 12.dp)
@@ -764,7 +764,7 @@ fun AiWordGenerationBottomSheet(
     if (isGenerating) {
         BottomSheet(
             visible = visible,
-            onDismiss = { /* 생성 중엔 닫기 불가 */ },
+            onDismiss = { /* Cannot close while generating */ },
             config = BottomSheetConfig(
                 dismissOnBackdropClick = false,
                 enableSwipeToDismiss = false
@@ -780,14 +780,14 @@ fun AiWordGenerationBottomSheet(
                 CircularProgressIndicator(modifier = Modifier.size(48.dp))
                 Spacer(Modifier.height(24.dp))
                 Text(
-                    "단어를 생성중이에요...",
+                    "Generating words...",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "약 1분 소요",
+                    "Takes about 1 minute",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary
                 )
@@ -798,10 +798,10 @@ fun AiWordGenerationBottomSheet(
         BottomSheetWithHeader(
             visible = visible,
             onDismiss = onDismiss,
-            title = "${generatedWords.size}개의 단어가 생성되었습니다",
+            title = "${generatedWords.size}words generated",
             actions = listOf(
                 BottomSheetAction.Primary(
-                    text = "단어 추가하기",
+                    text = "Add Words",
                     onClick = onAddWords
                 )
             )
@@ -852,7 +852,7 @@ fun AiWordGenerationBottomSheet(
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                         ) {
                             Text(
-                                "삭제",
+                                "Delete",
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -864,10 +864,10 @@ fun AiWordGenerationBottomSheet(
         BottomSheetWithHeader(
             visible = visible,
             onDismiss = onDismiss,
-            title = "AI 단어 추가",
+            title = "AI Add Word",
             actions = listOf(
                 BottomSheetAction.Primary(
-                    text = "생성하기",
+                    text = "Generate",
                     enabled = topic.isNotBlank() && count.isNotBlank(),
                     onClick = onGenerate
                 )
@@ -877,7 +877,7 @@ fun AiWordGenerationBottomSheet(
                 OutlinedTextField(
                     value = topic,
                     onValueChange = onTopicChange,
-                    label = { Text("주제를 입력해주세요") },
+                    label = { Text("Please enter a topic") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -887,7 +887,7 @@ fun AiWordGenerationBottomSheet(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        "생성 단어 개수",
+                        "Number of words to generate",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -910,7 +910,7 @@ fun AiWordGenerationBottomSheet(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.minus),
-                                contentDescription = "감소",
+                                contentDescription = "Decrease",
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -935,7 +935,7 @@ fun AiWordGenerationBottomSheet(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.plus),
-                                contentDescription = "증가",
+                                contentDescription = "Increase",
                                 modifier = Modifier.size(24.dp)
                             )
                         }

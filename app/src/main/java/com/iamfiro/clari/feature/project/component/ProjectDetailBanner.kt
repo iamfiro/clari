@@ -35,7 +35,7 @@ fun ProjectDetailBanner(
     Box(modifier = modifier) {
         AsyncImage(
             model = thumbnail,
-            contentDescription = "배너",
+            contentDescription = "Banner",
             modifier = Modifier
                 .fillMaxWidth()
                 .height(250.dp)
@@ -63,7 +63,7 @@ fun ProjectDetailBanner(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.arrow_left),
-                    contentDescription = "뒤로가기",
+                    contentDescription = "Back",
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -73,7 +73,7 @@ fun ProjectDetailBanner(
                     IconButton(onClick = onShareClick) {
                         Icon(
                             painter = painterResource(R.drawable.share),
-                            contentDescription = "공유",
+                            contentDescription = "Share",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -82,7 +82,7 @@ fun ProjectDetailBanner(
                     IconButton(onClick = onDeleteClick) {
                         Icon(
                             painter = painterResource(R.drawable.trash),
-                            contentDescription = "삭제",
+                            contentDescription = "Delete",
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(22.dp)
                         )

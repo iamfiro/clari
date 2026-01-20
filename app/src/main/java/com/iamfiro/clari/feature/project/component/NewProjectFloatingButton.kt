@@ -23,13 +23,13 @@ fun NewProjectFloatingButton(
         icon = {
             Icon(
                 painter = painterResource(R.drawable.folder_plus),
-                contentDescription = "프로젝트 추가",
+                contentDescription = "Add Project",
                 Modifier.size(20.dp)
             )
         },
         text = {
             Text(
-                text = "프로젝트 추가",
+                text = "Add Project",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold
             )

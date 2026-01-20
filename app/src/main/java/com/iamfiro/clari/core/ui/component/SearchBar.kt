@@ -26,7 +26,7 @@ fun SearchBar(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "검색"
+    placeholder: String = "Search"
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
